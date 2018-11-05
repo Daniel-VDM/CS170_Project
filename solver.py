@@ -42,7 +42,7 @@ def parse_input(folder_name):
 
     return graph, num_buses, size_bus, constraints
 
-def solve():
+def solve(graph, num_buses, size_bus, constraints):
     #TODO: Write this method as you like. We'd recommend changing the arguments here as well
     pass
 
