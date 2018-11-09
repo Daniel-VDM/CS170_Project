@@ -3,6 +3,9 @@
   <component name="ChangeListManager">
     <list default="true" id="5731f02d-528d-4279-8e13-3c7475228088" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/input_gen-output/large-input.gml" beforeDir="false" afterPath="$PROJECT_DIR$/input_gen-output/large-input.gml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/input_gen-output/large-input.out" beforeDir="false" afterPath="$PROJECT_DIR$/input_gen-output/large-input.out" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/input_gen-output/large-input.txt" beforeDir="false" afterPath="$PROJECT_DIR$/input_gen-output/large-input.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/input_gen.py" beforeDir="false" afterPath="$PROJECT_DIR$/input_gen.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -13,7 +16,7 @@
   </component>
   <component name="CoverageDataManager">
     <SUITE FILE_PATH="coverage/CS170_Project$solver.coverage" NAME="solver Coverage Results" MODIFIED="1541758715655" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/CS170_Project$input_gen.coverage" NAME="input_gen Coverage Results" MODIFIED="1541771606601" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/CS170_Project$input_gen.coverage" NAME="input_gen Coverage Results" MODIFIED="1541807142407" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="FUSProjectUsageTrigger">
     <session id="1193125281">
@@ -38,14 +41,14 @@
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="py" value="7255" />
-          <entry key="txt" value="36" />
+          <entry key="py" value="7259" />
+          <entry key="txt" value="60" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="PLAIN_TEXT" value="36" />
-          <entry key="Python" value="7255" />
+          <entry key="PLAIN_TEXT" value="60" />
+          <entry key="Python" value="7259" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages" />
@@ -78,12 +81,12 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/input_gen.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="527">
-              <caret line="31" column="11" lean-forward="true" selection-start-line="31" selection-start-column="11" selection-end-line="31" selection-end-column="11" />
+            <state relative-caret-position="270">
+              <caret line="93" column="65" lean-forward="true" selection-start-line="93" selection-start-column="65" selection-end-line="93" selection-end-column="65" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
-                <marker date="1541806679525" expanded="true" signature="1594:1797" ph="..." />
-                <marker date="1541806679525" expanded="true" signature="2755:2862" ph="..." />
+                <marker date="1541807140843" expanded="true" signature="1594:1797" ph="..." />
+                <marker date="1541807140843" expanded="true" signature="2723:2862" ph="..." />
               </folding>
             </state>
           </provider>
@@ -250,7 +253,21 @@
       <option name="project" value="LOCAL" />
       <updated>1541771649670</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Quick structure update.">
+      <created>1541806711472</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1541806711472</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Quick structure update.">
+      <created>1541806812661</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1541806812661</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -280,12 +297,12 @@
       <window_info anchor="right" id="Database" order="4" />
     </layout>
     <layout-to-restore>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.25940338" />
+      <window_info content_ui="combo" id="Project" order="0" weight="0.25940338" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.32968238" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.32968238" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.39978093" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -312,7 +329,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Test" />
     <MESSAGE value="Initial input gen code added." />
-    <option name="LAST_COMMIT_MESSAGE" value="Initial input gen code added." />
+    <MESSAGE value="Quick structure update." />
+    <option name="LAST_COMMIT_MESSAGE" value="Quick structure update." />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://C:/ProgramData/Anaconda3/Lib/optparse.py">
@@ -369,12 +387,12 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/input_gen.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="527">
-          <caret line="31" column="11" lean-forward="true" selection-start-line="31" selection-start-column="11" selection-end-line="31" selection-end-column="11" />
+        <state relative-caret-position="270">
+          <caret line="93" column="65" lean-forward="true" selection-start-line="93" selection-start-column="65" selection-end-line="93" selection-end-column="65" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
-            <marker date="1541806679525" expanded="true" signature="1594:1797" ph="..." />
-            <marker date="1541806679525" expanded="true" signature="2755:2862" ph="..." />
+            <marker date="1541807140843" expanded="true" signature="1594:1797" ph="..." />
+            <marker date="1541807140843" expanded="true" signature="2723:2862" ph="..." />
           </folding>
         </state>
       </provider>

@@ -57,7 +57,6 @@ class InputGenerator:
               has 1 person in the super set.
             - Added the |Super Set| choose 2 constraints as discussed.
         """
-        self.create_super_set()
         for tup in itertools.combinations(list(self.super_set), 2):
             self.rowdy_groups.append(list(tup))
 
@@ -82,6 +81,7 @@ class InputGenerator:
         Order of generation can be changes if desired.
         """
         self.generate_solution()
+        self.create_super_set()
         self.generate_constraints()
         self.generate_friends()
 
