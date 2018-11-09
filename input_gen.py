@@ -40,6 +40,14 @@ class InputGenerator:
                 move_to.append(move_from.pop())
         self.solution = sol
 
+    def create_super_set(self):
+        """
+        Separate super set creator on its own so that we can change
+        this in the future.
+        """
+        for group in self.solution:
+            self.super_set.add(group[0])
+
     def generate_constraints(self):
         """
         Follow the API.
@@ -49,8 +57,7 @@ class InputGenerator:
               has 1 person in the super set.
             - Added the |Super Set| choose 2 constraints as discussed.
         """
-        for group in self.solution:
-            self.super_set.add(group[0])
+        self.create_super_set()
         for tup in itertools.combinations(list(self.super_set), 2):
             self.rowdy_groups.append(list(tup))
 
@@ -67,6 +74,16 @@ class InputGenerator:
             self.G.add_edge(tup[0], tup[1])
 
         # TODO: Friend / Edge generation.
+
+    def generate(self):
+        """
+        Method to simply generate the file.
+
+        Order of generation can be changes if desired.
+        """
+        self.generate_solution()
+        self.generate_constraints()
+        self.generate_friends()
 
     def write_solution(self, filename, directory):
         """
@@ -119,19 +136,14 @@ def main():
     if re.compile("input_gen-output/.*.").match(options.output_dir) is None:
         options.output_dir = "input_gen-output/{}".format(options.output_dir)
     if options.kids_cnt < 25:
-        raise IOError("Kids count below 25")
+        raise ValueError("Kids count below 25")
     elif 25 <= options.kids_cnt <= 50 and options.constraint_size > 100 or \
             250 <= options.kids_cnt <= 500 and options.constraint_size > 1000 or \
             500 <= options.kids_cnt <= 1000 and options.constraint_size > 2000:
-        raise IOError("Constraint sizes {} for {} kids".format(options.constraints, options.kids_cnt))
+        raise ValueError("Constraint sizes {} for {} kids".format(options.constraints, options.kids_cnt))
 
     gen = InputGenerator(options.kids_cnt, options.bus_cnt, options.constraint_size)
-
-    # TODO: File Generation
-    gen.generate_solution()
-    gen.generate_constraints()
-    gen.generate_friends()
-
+    gen.generate()
     gen.write_solution(options.output_name, options.output_dir)
     gen.write_input(options.output_name, options.output_dir)
 
