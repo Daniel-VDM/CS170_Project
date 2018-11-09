@@ -116,8 +116,8 @@ def main():
     if re.compile(".*.txt").match(options.output_name) is not None or \
             re.compile(".*.out").match(options.output_name) is not None:
         options.output_name = options.output_name[:-4]
-    if re.compile("outputs/.*.").match(options.output_dir) is None:
-        options.output_dir = "outputs/{}".format(options.output_dir)
+    if re.compile("input_gen-output/.*.").match(options.output_dir) is None:
+        options.output_dir = "input_gen-output/{}".format(options.output_dir)
     if options.kids_cnt < 25:
         raise IOError("Kids count below 25")
     elif 25 <= options.kids_cnt <= 50 and options.constraint_size > 100 or \
