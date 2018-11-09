@@ -127,9 +127,9 @@ def main():
                     help='The number of buses. Default=25')
     opts.add_option('-c', '--constraints', dest='constraint_size', type=int, default=2000,
                     help='Max number of constraints. Default=2000')
-    options, args = opts.parse_args()
 
     # Argument parsing / cleaning
+    options, args = opts.parse_args()
     if re.compile(".*.txt").match(options.output_name) is not None or \
             re.compile(".*.out").match(options.output_name) is not None:
         options.output_name = options.output_name[:-4]
