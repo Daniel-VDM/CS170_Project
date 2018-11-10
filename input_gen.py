@@ -32,7 +32,7 @@ class InputGenerator:
         """
         lst = list(self.G.nodes)
         random.shuffle(lst)
-        sol = [list(l) for l in np.array_split(np.array(lst), self.bus_count)]
+        sol = [list(l) for l in np.array_split(lst, self.bus_count)]
         for _ in range(self.kids_count//self.bus_count):  # More loops = More uneven group sizes.
             move_from = sol[random.randint(0, len(sol)-1)]
             move_to = sol[random.randint(0, len(sol)-1)]
