@@ -5,6 +5,8 @@ from optparse import OptionParser
 import re
 import random
 import itertools
+import os
+import output_scorer
 
 
 class InputGenerator:
@@ -16,7 +18,7 @@ class InputGenerator:
         self.kids_count = kids_count
         self.bus_count = bus_count
         self.constraint_count = constraint_count
-        self.bus_size = None  # TBD when generating the input.
+        self.bus_size = kids_count  # TBD, this should change during file generation.
         self.super_set = set()
         self.rowdy_groups = []
         self.solution = []
@@ -85,34 +87,53 @@ class InputGenerator:
         self.generate_constraints()
         self.generate_friends()
 
-    def write_solution(self, filename, directory):
+    def write_solution(self, file_name, directory="temp"):
         """
         Writes our planted solution's .out file as specified in the
         project spec.
 
-        :param filename: clean filename string with no file extension.
+        :param file_name: clean filename string with no file extension.
         :param directory: directory string with slashes included.
         """
-        with open("{}/{}.out".format(directory, filename), 'w') as f:
+        with open("{}/{}.out".format(directory, file_name), 'w') as f:
             for lst in self.solution:
                 f.write(str(lst))
                 f.write("\n")
 
-    def write_input(self, filename, directory):
+    def write_input(self, graph_file_name, param_file_name, directory="temp"):
         """
         Writes the graph's (G) .gml file and parameters .txt file as
         specified in the project spec.
 
-        :param filename: clean filename string with no file extension.
+        :param graph_file_name: clean file name string with no file extension.
+        :param param_file_name: "  "  "  "
         :param directory: directory string with slashes included.
         """
-        nx.write_gml(self.G, "{}/{}.gml".format(directory, filename))
-        with open("{}/{}.txt".format(directory, filename), 'w') as f:
+        nx.write_gml(self.G, "{}/{}.gml".format(directory, graph_file_name))
+        with open("{}/{}.txt".format(directory, param_file_name), 'w') as f:
             f.write("{}\n".format(self.bus_count))
             f.write("{}\n".format(self.bus_size))
             for group in self.rowdy_groups:
                 f.write(str(group))
                 f.write("\n")
+
+    def score_graph(self):
+        """
+        Quick and dirty scorer for the graph.
+        Note that there is a lot of file writing so that we could use
+        the included output_scorer.
+
+        :return: Score of the current solution on the current graph.
+        """
+        if not os.path.exists("temp"):
+            os.makedirs("temp")
+        self.write_solution("temp")
+        self.write_input("graph", "parameters")
+        score = output_scorer.score_output("temp", "temp/temp.out")
+        os.remove("temp/temp.out")
+        os.remove("temp/graph.gml")
+        os.remove("temp/parameters.txt")
+        return score[0]
 
 
 def main():
@@ -145,7 +166,8 @@ def main():
     gen = InputGenerator(options.kids_cnt, options.bus_cnt, options.constraint_size)
     gen.generate()
     gen.write_solution(options.output_name, options.output_dir)
-    gen.write_input(options.output_name, options.output_dir)
+    gen.write_input(options.output_name, options.output_name, options.output_dir)
+    print("The score was: {}".format(gen.score_graph()))
 
 
 if __name__ == "__main__":
