@@ -2,6 +2,7 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 from optparse import OptionParser
+import math
 import random
 import itertools
 import os
@@ -63,6 +64,30 @@ class InputGenerator:
 
         # TODO: Extra constraints.
 
+    def _create_super_set_common_friends(self, percentage):
+        """
+        Private method that (randomly) creates the common friends group
+        for the super set. And add the edges to self.G
+
+        :param percentage: a float between 0 and 1. It is the percentage of
+            people in a bus that are friends with everyone in the super set
+        :return: List of lists that contain people that are friends with
+            everyone in the super set.
+            The list in indexed as follows:
+                Element i is a list of people in the super set common
+                friends group for bus i in self.solution.
+        """
+        lst = []
+        for bus in self.solution:
+            ppl = set(bus) - self.super_set
+            num_of_ppl = max(1, math.ceil(len(ppl) * percentage))
+            common_friends = random.sample(ppl, num_of_ppl)
+            for u in common_friends:
+                for v in self.super_set:
+                    self.G.add_edge(u, v)
+            lst.append(common_friends)
+        return lst
+
     def generate_friends(self):
         """
         Follow the API.
@@ -72,6 +97,7 @@ class InputGenerator:
         """
         for tup in itertools.combinations(list(self.super_set), 2):
             self.G.add_edge(tup[0], tup[1])
+        super_common_friends = self._create_super_set_common_friends(percentage=0.15)
 
         # TODO: Friend / Edge generation.
 
@@ -134,6 +160,18 @@ class InputGenerator:
         os.remove("temp/parameters.txt")
         return score[0]
 
+    def draw_graph(self):
+        """
+        Simple method to draw the graph where super set vertices
+        are spaced out evenly on a horizontal line.
+        """
+        fixed_pos = {x: (y, 0) for x, y in
+                     zip(self.super_set, range(-len(self.super_set)+1, len(self.super_set), 2))}
+        pos = nx.spring_layout(self.G, fixed=fixed_pos.keys(), pos=fixed_pos)
+        nx.draw_networkx(self.G, pos=pos)
+        print("Super Set: {}".format(self.super_set))
+        plt.show()
+
 
 def main():
     opts = OptionParser()
@@ -169,6 +207,8 @@ def main():
     gen.write_input(options.output_name, options.output_name, options.output_dir)
     print("Generated files in: {}".format(options.output_dir if options.output_dir else "same directory"))
     print("Score: {}".format(gen.score_graph()))
+    print("Number of edges: {}".format(len(gen.G.edges)))
+    gen.draw_graph()
 
 
 if __name__ == "__main__":
