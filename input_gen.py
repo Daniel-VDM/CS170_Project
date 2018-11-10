@@ -40,7 +40,7 @@ class InputGenerator:
                 move_to.append(move_from.pop())
         self.solution = sol
 
-    def create_super_set(self):
+    def generate_super_set(self):
         """
         Separate super set creator on its own so that we can change
         this in the future.
@@ -81,7 +81,7 @@ class InputGenerator:
         Order of generation can be changes if desired.
         """
         self.generate_solution()
-        self.create_super_set()
+        self.generate_super_set()
         self.generate_constraints()
         self.generate_friends()
 
