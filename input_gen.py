@@ -2,7 +2,6 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 from optparse import OptionParser
-import re
 import random
 import itertools
 import os
@@ -87,7 +86,7 @@ class InputGenerator:
         self.generate_constraints()
         self.generate_friends()
 
-    def write_solution(self, file_name, directory="temp"):
+    def write_solution(self, file_name, directory="temp/"):
         """
         Writes our planted solution's .out file as specified in the
         project spec.
@@ -95,12 +94,12 @@ class InputGenerator:
         :param file_name: clean filename string with no file extension.
         :param directory: directory string with slashes included.
         """
-        with open("{}/{}.out".format(directory, file_name), 'w') as f:
+        with open("{}{}.out".format(directory, file_name), 'w') as f:
             for lst in self.solution:
                 f.write(str(lst))
                 f.write("\n")
 
-    def write_input(self, graph_file_name, param_file_name, directory="temp"):
+    def write_input(self, graph_file_name, param_file_name, directory="temp/"):
         """
         Writes the graph's (G) .gml file and parameters .txt file as
         specified in the project spec.
@@ -109,8 +108,8 @@ class InputGenerator:
         :param param_file_name: "  "  "  "
         :param directory: directory string with slashes included.
         """
-        nx.write_gml(self.G, "{}/{}.gml".format(directory, graph_file_name))
-        with open("{}/{}.txt".format(directory, param_file_name), 'w') as f:
+        nx.write_gml(self.G, "{}{}.gml".format(directory, graph_file_name))
+        with open("{}{}.txt".format(directory, param_file_name), 'w') as f:
             f.write("{}\n".format(self.bus_count))
             f.write("{}\n".format(self.bus_size))
             for group in self.rowdy_groups:
@@ -138,24 +137,25 @@ class InputGenerator:
 
 def main():
     opts = OptionParser()
-    opts.add_option('-o', '--output', dest='output_dir', type=str, default='',
-                    help='The desired directory of the output.')
-    opts.add_option('-n', '--name', dest='output_name', type=str, default='large-input',
-                    help='The desired file name of the output.')
+    opts.add_option('-d', '--directory', dest='output_dir', type=str, default='',
+                    help="The desired directory of the output. Default = ''")
+    opts.add_option('-n', '--name', dest='output_name', type=str, default='large-input.txt',
+                    help="The desired file name of the output. Default = 'large-input'")
     opts.add_option('-k', '--kids', dest='kids_cnt', type=int, default=1000,
-                    help='The number of kids. Default=1000')
+                    help='The number of kids. Default = 1000')
     opts.add_option('-b', '--buses', dest='bus_cnt', type=int, default=25,
-                    help='The number of buses. Default=25')
+                    help='The number of buses. Default = 25')
     opts.add_option('-c', '--constraints', dest='constraint_size', type=int, default=2000,
-                    help='Max number of constraints. Default=2000')
+                    help='Max number of constraints. Default = 2000')
 
     # Argument parsing / cleaning
     options, args = opts.parse_args()
-    if re.compile(".*.txt").match(options.output_name) is not None or \
-            re.compile(".*.out").match(options.output_name) is not None:
+    if options.output_name[-4:] == ".txt" or options.output_name[-4:] == ".out":
         options.output_name = options.output_name[:-4]
-    if re.compile("input_gen-output/.*.").match(options.output_dir) is None:
-        options.output_dir = "input_gen-output/{}".format(options.output_dir)
+    if options.output_dir and options.output_dir[-1] != "/":
+        options.output_dir = "{}/".format(options.output_dir)
+    if options.output_dir and not os.path.exists(options.output_dir):
+        os.makedirs(options.output_dir)
     if options.kids_cnt < 25:
         raise ValueError("Kids count below 25")
     elif 25 <= options.kids_cnt <= 50 and options.constraint_size > 100 or \
@@ -167,7 +167,8 @@ def main():
     gen.generate()
     gen.write_solution(options.output_name, options.output_dir)
     gen.write_input(options.output_name, options.output_name, options.output_dir)
-    print("The score was: {}".format(gen.score_graph()))
+    print("Generated files in: {}".format(options.output_dir if options.output_dir else "same directory"))
+    print("Score: {}".format(gen.score_graph()))
 
 
 if __name__ == "__main__":
