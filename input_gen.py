@@ -325,7 +325,7 @@ class InputGenerator:
             self.bus_count += 1
             self.trouble_makers.append(vertex)
 
-            # Make vertex a trouble maker
+            # Make vertex a trouble maker with super set vertices
             for u in self.super_set:
                 self.G.add_edge(u, vertex)
                 self.rowdy_groups.append([u, vertex])

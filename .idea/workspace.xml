@@ -3,13 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="5731f02d-528d-4279-8e13-3c7475228088" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/input_gen-output/large-input.gml" beforeDir="false" afterPath="$PROJECT_DIR$/input_gen-output/large-input.gml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/input_gen-output/large-input.out" beforeDir="false" afterPath="$PROJECT_DIR$/input_gen-output/large-input.out" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/input_gen-output/large-input.txt" beforeDir="false" afterPath="$PROJECT_DIR$/input_gen-output/large-input.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/input_gen.py" beforeDir="false" afterPath="$PROJECT_DIR$/input_gen.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/temp/graph.gml" beforeDir="false" afterPath="$PROJECT_DIR$/temp/graph.gml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/temp/parameters.txt" beforeDir="false" afterPath="$PROJECT_DIR$/temp/parameters.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/temp/temp.out" beforeDir="false" afterPath="$PROJECT_DIR$/temp/temp.out" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -44,14 +38,14 @@
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="py" value="19100" />
+          <entry key="py" value="19125" />
           <entry key="txt" value="437" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
           <entry key="PLAIN_TEXT" value="437" />
-          <entry key="Python" value="19100" />
+          <entry key="Python" value="19125" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages" />
@@ -84,12 +78,12 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/input_gen.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="330">
-              <caret line="284" column="43" lean-forward="true" selection-start-line="284" selection-start-column="43" selection-end-line="284" selection-end-column="43" />
+            <state relative-caret-position="296">
+              <caret line="327" column="65" selection-start-line="327" selection-start-column="65" selection-end-line="327" selection-end-column="65" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
-                <marker date="1541945967715" expanded="true" signature="11328:11716" ph="..." />
-                <marker date="1541945967715" expanded="true" signature="13409:14482" ph="..." />
+                <marker date="1541947049333" expanded="true" signature="11328:11716" ph="..." />
+                <marker date="1541947049333" expanded="true" signature="13409:14506" ph="..." />
               </folding>
             </state>
           </provider>
@@ -481,7 +475,14 @@
       <option name="project" value="LOCAL" />
       <updated>1541945357028</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="Added trouble maker generation. And some code for score increasing swap constraining - not sure if this is useful.">
+      <created>1541946932509</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1541946932509</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -657,12 +658,12 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/input_gen.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="330">
-          <caret line="284" column="43" lean-forward="true" selection-start-line="284" selection-start-column="43" selection-end-line="284" selection-end-column="43" />
+        <state relative-caret-position="296">
+          <caret line="327" column="65" selection-start-line="327" selection-start-column="65" selection-end-line="327" selection-end-column="65" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
-            <marker date="1541945967715" expanded="true" signature="11328:11716" ph="..." />
-            <marker date="1541945967715" expanded="true" signature="13409:14482" ph="..." />
+            <marker date="1541947049333" expanded="true" signature="11328:11716" ph="..." />
+            <marker date="1541947049333" expanded="true" signature="13409:14506" ph="..." />
           </folding>
         </state>
       </provider>
