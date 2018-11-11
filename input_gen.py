@@ -230,7 +230,7 @@ class InputGenerator:
 
             # Edge to other super vertices:
             U = random.sample(self.super_set - set(bus_super_vertices), budget_lst[1])
-            V = random.sample(bus_vertices, budget_lst[1])
+            V = np.random.choice(list(bus_vertices), size=budget_lst[1], replace=True)
             self._assign_edges(U, V, prob=0.5)
 
             # Internal bus edges
@@ -351,7 +351,6 @@ def main():
 
     gen = InputGenerator(options.kids_cnt, options.bus_cnt, options.constraint_size)
     gen.generate()
-    exit(0)
     gen.write_solution(options.output_name, options.output_dir)
     gen.write_input(options.output_name, options.output_name, options.output_dir)
     print("Generated files in: {}".format(options.output_dir if options.output_dir else "same directory"))
