@@ -251,6 +251,7 @@ class InputGenerator:
             V = random.sample((set(self.G.nodes) - self.super_set) - bus_vertices, budget_lst[3])
             self._assign_edges(U, V, prob=0.2)
 
+
     def generate(self):
         """
         Method to simply generate the file.
