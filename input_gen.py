@@ -125,22 +125,22 @@ class InputGenerator:
             bus_solo_vertices = (bus - self.super_set) - set(common_friends[i])
             a = (3*len(bus_solo_vertices)) // 4
             b = len(bus_solo_vertices)
-            to_bus_super_vertex = random.randint(a, b)
+            to_bus_super_vertex = max(2, random.randint(a, b))
 
             other_super_vertices = self.super_set - (self.super_set & bus)
             a = len(other_super_vertices) // 2
             b = len(other_super_vertices)
-            to_other_super_vertex = random.randint(a, b)
+            to_other_super_vertex = max(1, random.randint(a, b))
 
             bus_non_super_vertices = bus - self.super_set
             a = len(bus_non_super_vertices) // 2
             b = len(bus_non_super_vertices)
-            to_inside_bus = random.randint(a, b)
+            to_inside_bus = max(2, random.randint(a, b))
 
             all_other_vertices = (set(self.G.nodes) - self.super_set) - bus
             a = len(all_other_vertices) // 4
             b = len(all_other_vertices) // 2
-            to_spread = random.randint(a, b)
+            to_spread = max(3, random.randint(a, b))
 
             lst = [to_bus_super_vertex, to_other_super_vertex, to_inside_bus, to_spread]
             bus_edge_budgets.append(lst)
@@ -293,7 +293,7 @@ def main():
     elif 25 <= options.kids_cnt <= 50 and options.constraint_size > 100 or \
             250 <= options.kids_cnt <= 500 and options.constraint_size > 1000 or \
             500 <= options.kids_cnt <= 1000 and options.constraint_size > 2000:
-        raise ValueError("Constraint sizes {} for {} kids".format(options.constraints, options.kids_cnt))
+        raise ValueError("Constraint sizes {} for {} kids".format(options.constraint_size, options.kids_cnt))
 
     gen = InputGenerator(options.kids_cnt, options.bus_cnt, options.constraint_size)
     gen.generate()
