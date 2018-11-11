@@ -18,13 +18,14 @@ class InputGenerator:
         """
         self.kids_count = kids_count
         self.bus_count = bus_count
-        self.constraint_size = constraint_size
-        self.bus_size = kids_count  # TBD, this should change during file generation.
+        self.constraint_limit = constraint_size
+        self.bus_size = kids_count # TBD, this should change during file generation.
         self.super_set = set()
         self.rowdy_groups = []
         self.solution = []
         self.G = nx.Graph()
         self.G.add_nodes_from((str(i) for i in range(kids_count)))
+        self.trouble_makers = []
         self.G = self.G.to_undirected()  # Probably not needed
 
     def generate_solution(self):
@@ -72,7 +73,7 @@ class InputGenerator:
             return combinations
 
         for tup in random_choose_2_combinations(list(self.super_set)):
-            if len(self.rowdy_groups) < self.constraint_size:
+            if len(self.rowdy_groups) < self.constraint_limit:
                 # make sure we don't go over the number of constraints we have allocated
                 self.rowdy_groups.append(list(tup))
             else:
@@ -84,7 +85,7 @@ class InputGenerator:
         low, high = 0.85, 0.96  # set to 0.96 because numpy uniform produces values [low, high)
         for bus in self.solution:
             # once again, make sure we don't go over in constraint count
-            if len(self.rowdy_groups) > self.constraint_size:
+            if len(self.rowdy_groups) > self.constraint_limit:
                 return
             # we randomly sample a group of 85-95% of the bus to make a rowdy group
             # randomly choose a percentage of the bus to sample (uniform over interval)
@@ -245,7 +246,94 @@ class InputGenerator:
             # Spread edges
             U = np.random.choice(list(bus_vertices - self.super_set), size=budget_lst[3], replace=True)
             V = random.sample((set(self.G.nodes) - self.super_set) - bus_vertices, budget_lst[3])
-            self._assign_edges(U, V, prob=0.2)
+            self._assign_edges(U, V, prob=0.25)
+
+    def constrain_score_increasing_swaps(self, verbose=True):
+        """
+        Constrain the high degree vertices of each bus who's swap
+        lead to an immediate score increase.
+
+        Takes a while to compute.
+        - Maybe over constraining?
+
+        Aim is to stop branching algorithms before they get
+        to the planted solution.
+        """
+        def swap(lst1, lst2, a, b):
+            """
+            Helper to mutate lst args via swapping a and b.
+            Swap a from lst1 with b from lst2.
+            """
+            lst1.append(b)
+            lst2.append(a)
+            lst1.remove(a)
+            lst2.remove(b)
+
+        buses_done = 0
+        if verbose:
+            print("Constraining score increasing swaps...")
+        for bus in self.solution:
+            super_vertex = random.choice(list(set(bus) & self.super_set))
+            lst = [n for n in bus if n not in self.super_set]
+            hi_deg_vertex = max(self.G.degree(lst), key=lambda x: x[1])[0]
+            current_score = self.score_graph()
+
+            # Find increasing swaps with current bus
+            increasing_swaps = []
+            for other_bus in self.solution:
+                if hi_deg_vertex in other_bus:
+                    continue
+                lst = [n for n in other_bus if n not in self.super_set]
+                other_hi_deg_vertex = max(self.G.degree(lst), key=lambda x: x[1])[0]
+                swap(bus, other_bus, hi_deg_vertex, other_hi_deg_vertex)
+                score = self.score_graph()
+                swap(bus, other_bus, other_hi_deg_vertex, hi_deg_vertex)
+                if current_score > score:
+                    increasing_swaps.append(other_hi_deg_vertex)
+                if len(increasing_swaps) > 10:
+                    break
+
+            # Constrain increasing swaps
+            for v in increasing_swaps:
+                if len(self.rowdy_groups) >= self.constraint_limit:
+                    return
+                self.rowdy_groups.append([v, super_vertex])
+
+            buses_done += 1
+            if verbose:
+                print("Finished {}/{} buses...".format(buses_done, len(self.solution)))
+
+    def generate_trouble_makers(self, count):
+        """
+        Trouble makes who create rowdy groups with all of their friends.
+        All of their friends = all vertices in super set + some random people.
+        """
+        for _ in range(count):
+            while True:
+                pull_from = random.choice(self.solution)
+                if len(pull_from) > 1:
+                    break
+            vertex = random.choice(list(set(pull_from) - self.super_set))
+
+            # Create solo bus
+            pull_from.remove(vertex)
+            self.G.remove_node(vertex)
+            self.G.add_node(vertex)
+            self.solution.append([vertex])
+            self.bus_count += 1
+            self.trouble_makers.append(vertex)
+
+            # Make vertex a trouble maker
+            for u in self.super_set:
+                self.G.add_edge(u, vertex)
+                self.rowdy_groups.append([u, vertex])
+
+            # Make it a trouble maker with high degree vertices
+            lst = sorted(self.G.degree(list(set(self.G.nodes) - self.super_set)),
+                         key=lambda x: x[1], reverse=True)
+            for u in lst[:random.randint(0, self.bus_count//2)]:
+                self.G.add_edge(u[0], vertex)
+                self.rowdy_groups.append([u[0], vertex])
 
     def set_bus_size(self):
         """
@@ -258,12 +346,14 @@ class InputGenerator:
         """
         Method to simply generate the file.
 
-        Order of generation can be changes if desired.
+        Order of generation can be changed if desired.
         """
         self.generate_solution()
         self.generate_super_set()
         self.generate_constraints()
         self.generate_friends()
+        self.generate_trouble_makers(random.randint(1, 3))
+        # self.constrain_score_increasing_swaps()
         self.set_bus_size()
 
     def write_solution(self, file_name, directory="temp/"):
@@ -288,9 +378,9 @@ class InputGenerator:
         :param param_file_name: "  "  "  "
         :param directory: directory string with slashes included.
         """
-        if len(self.rowdy_groups) > self.constraint_size:
+        if len(self.rowdy_groups) > self.constraint_limit:
             raise ValueError("Rowdy group size ({}) > constraint max count: {}".format(
-                len(self.rowdy_groups), self.constraint_size))
+                len(self.rowdy_groups), self.constraint_limit))
         nx.write_gml(self.G, "{}{}.gml".format(directory, graph_file_name))
         with open("{}{}.txt".format(directory, param_file_name), 'w') as f:
             f.write("{}\n".format(self.bus_count))
@@ -312,7 +402,7 @@ class InputGenerator:
         self.write_solution("temp")
         self.write_input("graph", "parameters")
         score = output_scorer.score_output("temp", "temp/temp.out")
-        return score[0]
+        return score
 
     def draw_graph(self):
         """
@@ -337,9 +427,12 @@ def main():
     opts.add_option('-k', '--kids', dest='kids_cnt', type=int, default=1000,
                     help='The number of kids. Default = 1000')
     opts.add_option('-b', '--buses', dest='bus_cnt', type=int, default=25,
-                    help='The number of buses. Default = 25')
-    opts.add_option('-c', '--constraints', dest='constraint_size', type=int, default=2000,
+                    help='The number of buses (base). This will be increased '
+                         'by at most 3. Default = 25')
+    opts.add_option('-c', '--constraints', dest='constraint_limit', type=int, default=2000,
                     help='Max number of constraints. Default = 2000')
+    opts.add_option("-G", action="store_true", dest="graph",
+                    help="Toggle graphing of input after generation")
 
     # Argument parsing / cleaning
     options, args = opts.parse_args()
@@ -351,12 +444,12 @@ def main():
         os.makedirs(options.output_dir)
     if options.kids_cnt < 25:
         raise ValueError("Kids count below 25")
-    elif 25 <= options.kids_cnt <= 50 and options.constraint_size > 100 or \
-            250 <= options.kids_cnt <= 500 and options.constraint_size > 1000 or \
-            500 <= options.kids_cnt <= 1000 and options.constraint_size > 2000:
-        raise ValueError("Constraint sizes {} for {} kids".format(options.constraint_size, options.kids_cnt))
+    elif 25 <= options.kids_cnt <= 50 and options.constraint_limit > 100 or \
+            250 <= options.kids_cnt <= 500 and options.constraint_limit > 1000 or \
+            500 <= options.kids_cnt <= 1000 and options.constraint_limit > 2000:
+        raise ValueError("Constraint sizes {} for {} kids".format(options.constraint_limit, options.kids_cnt))
 
-    gen = InputGenerator(options.kids_cnt, options.bus_cnt, options.constraint_size)
+    gen = InputGenerator(options.kids_cnt, options.bus_cnt, options.constraint_limit)
     gen.generate()
     gen.write_solution(options.output_name, options.output_dir)
     gen.write_input(options.output_name, options.output_name, options.output_dir)
@@ -366,7 +459,9 @@ def main():
     print("Top 20 Degrees: key = (vertex, degree):\n {}".format(
         list(sorted(gen.G.degree, key=lambda x: x[1], reverse=True))[:20]))
     print("Super Set: {}".format(gen.super_set))
-    gen.draw_graph()
+    print("Trouble Makers: {}".format(gen.trouble_makers))
+    if options.graph:
+        gen.draw_graph()
 
 
 if __name__ == "__main__":

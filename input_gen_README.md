@@ -15,11 +15,13 @@ Options:
   -k KIDS_CNT, --kids=KIDS_CNT
                         The number of kids. Default = 1000
   -b BUS_CNT, --buses=BUS_CNT
-                        The number of buses. Default = 25
-  -c CONSTRAINT_SIZE, --constraints=CONSTRAINT_SIZE
+                        The number of buses (base). This will be increased by
+                        at most 3. Default = 25
+  -c CONSTRAINT_LIMIT, --constraints=CONSTRAINT_LIMIT
                         Max number of constraints. Default = 2000
+  -G                    Toggle graphing of input after generation
 ```
 
-Sample execution: `python input_gen.py -d "input_gen-output/" -n "large-input" -k 1000 -b 25 -c 2000`
+Sample execution: `python input_gen.py -d "input_gen-output/" -n "large-input" -k 1000 -b 25 -c 2000 -G`
 
 Note that the size of the buses (`s` in the spec) is set internally by the script and it is not something that can be set as an option.
