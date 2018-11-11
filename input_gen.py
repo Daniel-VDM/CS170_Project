@@ -239,7 +239,7 @@ class InputGenerator:
             pool = list(bus_vertices - set(bus_super_vertices))
             for _ in range(budget_lst[2]):
                 u = random.choice(pool)
-                U.append(random.choice(pool))
+                U.append(u)
                 v = random.choice(pool)
                 while v == u:
                     v = random.choice(pool)
@@ -355,7 +355,7 @@ def main():
     gen.write_solution(options.output_name, options.output_dir)
     gen.write_input(options.output_name, options.output_name, options.output_dir)
     print("Generated files in: {}".format(options.output_dir if options.output_dir else "same directory"))
-    print("Score: {}".format(gen.score_graph()))
+    print("\nScore: {}".format(gen.score_graph()))
     print("Number of edges: {}".format(len(gen.G.edges)))
     print("Top 20 Degrees: key = (vertex, degree):\n {}".format(
         list(sorted(gen.G.degree, key=lambda x: x[1], reverse=True))[:20]))
