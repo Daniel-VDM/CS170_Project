@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="5731f02d-528d-4279-8e13-3c7475228088" name="Default Changelist" comment="Bug fix">
+    <list default="true" id="5731f02d-528d-4279-8e13-3c7475228088" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/input_gen-output/large-input.gml" beforeDir="false" afterPath="$PROJECT_DIR$/input_gen-output/large-input.gml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/input_gen-output/large-input.out" beforeDir="false" afterPath="$PROJECT_DIR$/input_gen-output/large-input.out" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/large-input.gml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/large-input.out" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/large-input.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/input_gen-output/large-input.txt" beforeDir="false" afterPath="$PROJECT_DIR$/input_gen-output/large-input.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/input_gen.py" beforeDir="false" afterPath="$PROJECT_DIR$/input_gen.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/temp/graph.gml" beforeDir="false" afterPath="$PROJECT_DIR$/temp/graph.gml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/temp/parameters.txt" beforeDir="false" afterPath="$PROJECT_DIR$/temp/parameters.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/temp/temp.out" beforeDir="false" afterPath="$PROJECT_DIR$/temp/temp.out" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -16,7 +19,7 @@
   </component>
   <component name="CoverageDataManager">
     <SUITE FILE_PATH="coverage/CS170_Project$solver.coverage" NAME="solver Coverage Results" MODIFIED="1541758715655" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/CS170_Project$input_gen.coverage" NAME="input_gen Coverage Results" MODIFIED="1541925630162" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/CS170_Project$input_gen.coverage" NAME="input_gen Coverage Results" MODIFIED="1541945972922" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="FUSProjectUsageTrigger">
     <session id="1193125281">
@@ -31,24 +34,24 @@
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="11" />
+          <entry key="py" value="12" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Python" value="11" />
+          <entry key="Python" value="12" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="py" value="15704" />
-          <entry key="txt" value="305" />
+          <entry key="py" value="19100" />
+          <entry key="txt" value="437" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="PLAIN_TEXT" value="305" />
-          <entry key="Python" value="15704" />
+          <entry key="PLAIN_TEXT" value="437" />
+          <entry key="Python" value="19100" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages" />
@@ -60,8 +63,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/output_scorer.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="279">
-              <caret line="95" selection-start-line="95" selection-end-line="95" />
+            <state relative-caret-position="-629">
+              <caret line="32" selection-start-line="32" selection-end-line="32" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
               </folding>
@@ -81,11 +84,22 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/input_gen.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="311">
-              <caret line="111" column="35" lean-forward="true" selection-start-line="111" selection-start-column="35" selection-end-line="111" selection-end-column="35" />
+            <state relative-caret-position="330">
+              <caret line="284" column="43" lean-forward="true" selection-start-line="284" selection-start-column="43" selection-end-line="284" selection-end-column="43" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
+                <marker date="1541945967715" expanded="true" signature="11328:11716" ph="..." />
+                <marker date="1541945967715" expanded="true" signature="13409:14482" ph="..." />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://C:/ProgramData/Anaconda3/Lib/random.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="166">
+              <caret line="258" selection-start-line="258" selection-end-line="258" />
             </state>
           </provider>
         </entry>
@@ -296,7 +310,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/input_gen.py" />
-      <option name="PARAMETERS" value="-d &quot;input_gen-output/&quot; -n &quot;large-input&quot; -k 25 -b 5 -c 50" />
+      <option name="PARAMETERS" value="-d &quot;input_gen-output/&quot; -n &quot;large-input&quot; -k 2000 -b 30 -c 2000 -G" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -453,19 +467,33 @@
       <option name="project" value="LOCAL" />
       <updated>1541924173152</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="Bug fix">
+      <created>1541926577118</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1541926577118</updated>
+    </task>
+    <task id="LOCAL-00017" summary="Added trouble maker generation. And some code for score increasing swap constraining - not sure if this is useful.">
+      <created>1541945357028</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1541945357028</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="938" y="-1" width="1629" height="1048" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.27087316" />
+      <window_info content_ui="combo" id="Project" order="0" weight="0.27087316" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" sideWeight="0.49968132" weight="0.32932165" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49968132" weight="0.33150986" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.49904397" visible="true" weight="0.33260393" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.39934355" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -473,10 +501,10 @@
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.32968238" />
       <window_info anchor="bottom" id="Database Changes" order="9" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Event Log" order="10" sideWeight="0.50031865" side_tool="true" visible="true" weight="0.32932165" />
+      <window_info anchor="bottom" id="Event Log" order="10" sideWeight="0.500956" side_tool="true" weight="0.33260393" />
       <window_info anchor="bottom" id="Terminal" order="11" weight="0.32968238" />
       <window_info anchor="bottom" id="Python Console" order="12" />
-      <window_info anchor="bottom" id="Concurrent Activities Diagram" order="13" weight="0.32968238" />
+      <window_info anchor="bottom" id="Concurrent Activities Diagram" order="13" sideWeight="0.49968132" weight="0.32932165" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -488,19 +516,19 @@
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.32968238" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.49968132" visible="true" weight="0.33150986" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.39934355" />
+      <window_info anchor="bottom" id="Find" order="1" sideWeight="0.49968132" weight="0.32932165" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49904397" weight="0.33260393" />
+      <window_info active="true" anchor="bottom" id="Debug" order="3" visible="true" weight="0.39934355" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.32968238" />
       <window_info anchor="bottom" id="Database Changes" order="9" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Event Log" order="10" sideWeight="0.50031865" side_tool="true" weight="0.32932165" />
+      <window_info anchor="bottom" id="Event Log" order="10" sideWeight="0.500956" side_tool="true" weight="0.33260393" />
       <window_info anchor="bottom" id="Terminal" order="11" weight="0.32968238" />
       <window_info anchor="bottom" id="Python Console" order="12" />
-      <window_info anchor="bottom" id="Concurrent Activities Diagram" order="13" weight="0.32968238" />
+      <window_info anchor="bottom" id="Concurrent Activities Diagram" order="13" sideWeight="0.49968132" weight="0.32932165" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -548,15 +576,21 @@
     <MESSAGE value="Added draw method and added Super set common friends edge generation." />
     <MESSAGE value="Finished the (majority) of friend edges. Updated some drawing code, and scoring code." />
     <MESSAGE value="Bug fix" />
-    <option name="LAST_COMMIT_MESSAGE" value="Bug fix" />
+    <MESSAGE value="Added trouble maker generation. And some code for score increasing swap constraining - not sure if this is useful." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added trouble maker generation. And some code for score increasing swap constraining - not sure if this is useful." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/input_gen.py</url>
-          <line>254</line>
-          <option name="timeStamp" value="40" />
+          <line>299</line>
+          <option name="timeStamp" value="46" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/input_gen.py</url>
+          <line>333</line>
+          <option name="timeStamp" value="48" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
@@ -607,14 +641,14 @@
     <entry file="file://C:/ProgramData/Anaconda3/Lib/random.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="166">
-          <caret line="352" selection-start-line="352" selection-end-line="352" />
+          <caret line="258" selection-start-line="258" selection-end-line="258" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/output_scorer.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="279">
-          <caret line="95" selection-start-line="95" selection-end-line="95" />
+        <state relative-caret-position="-629">
+          <caret line="32" selection-start-line="32" selection-end-line="32" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
           </folding>
@@ -623,10 +657,12 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/input_gen.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="311">
-          <caret line="111" column="35" lean-forward="true" selection-start-line="111" selection-start-column="35" selection-end-line="111" selection-end-column="35" />
+        <state relative-caret-position="330">
+          <caret line="284" column="43" lean-forward="true" selection-start-line="284" selection-start-column="43" selection-end-line="284" selection-end-column="43" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
+            <marker date="1541945967715" expanded="true" signature="11328:11716" ph="..." />
+            <marker date="1541945967715" expanded="true" signature="13409:14482" ph="..." />
           </folding>
         </state>
       </provider>

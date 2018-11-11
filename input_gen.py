@@ -271,8 +271,10 @@ class InputGenerator:
 
         buses_done = 0
         if verbose:
-            print("Constraining score increasing swaps...")
+            print("This might take a while...\nConstraining score increasing swaps...")
         for bus in self.solution:
+            if set(bus) & self.super_set == set():
+                continue
             super_vertex = random.choice(list(set(bus) & self.super_set))
             lst = [n for n in bus if n not in self.super_set]
             hi_deg_vertex = max(self.G.degree(lst), key=lambda x: x[1])[0]
@@ -353,7 +355,7 @@ class InputGenerator:
         self.generate_constraints()
         self.generate_friends()
         self.generate_trouble_makers(random.randint(1, 3))
-        # self.constrain_score_increasing_swaps()
+        self.constrain_score_increasing_swaps()  # Might not use this.
         self.set_bus_size()
 
     def write_solution(self, file_name, directory="temp/"):
