@@ -64,6 +64,20 @@ class InputGenerator:
 
         # TODO: Extra constraints.
 
+    def _assign_edges(self, U, V, prob):
+        """
+        Private method to assign edges.
+
+        :param U: A list(-ish) of nodes where element i is u_i in (u_i,v_i)
+        :param V: A list(-ish) of nodes where element i is v_i in (u_i,v_i)
+        :param prob: the probability of edge (u_i,v_i) being assigned.
+        """
+        for u, v in zip(U, V):
+            if u == v:  # No self loops
+                continue
+            if np.random.uniform(0, 1) <= prob:
+                self.G.add_edge(u, v)
+
     def _create_super_set_common_friends(self, percentage):
         """
         Private method that (randomly) creates the common friends group
@@ -88,18 +102,100 @@ class InputGenerator:
             lst.append(common_friends)
         return lst
 
+    def _assign_bus_budgets(self, common_friends):
+        """
+        Private method to assign budgets for each bus.
+            Each bus has 4 budgets. In order its:
+                1) Number of edges to the super vertex of the bus.
+                2) Number of edges to all other super vertices.
+                3) Number of edges between vertices within the bus.
+                4) Number of edges to all other edges not in the bus
+                    and not in the super set.
+
+        :param common_friends: The set of common friends for the super set
+        :return: A list of lists of budgets. Element i is the budget list
+            for bus i in self.solutions. The 4 elements of each budget list
+            is documented above.
+        """
+        bus_edge_budgets = []
+        for i in range(self.bus_count):
+            bus = set(self.solution[i])
+
+            # Tune these numbers/sets as needed.
+            bus_solo_vertices = (bus - self.super_set) - set(common_friends[i])
+            a = (3*len(bus_solo_vertices)) // 4
+            b = len(bus_solo_vertices)
+            to_bus_super_vertex = random.randint(a, b)
+
+            other_super_vertices = self.super_set - (self.super_set & bus)
+            a = len(other_super_vertices) // 2
+            b = len(other_super_vertices)
+            to_other_super_vertex = random.randint(a, b)
+
+            bus_non_super_vertices = bus - self.super_set
+            a = len(bus_non_super_vertices) // 2
+            b = len(bus_non_super_vertices)
+            to_inside_bus = random.randint(a, b)
+
+            all_other_vertices = (set(self.G.nodes) - self.super_set) - bus
+            a = len(all_other_vertices) // 4
+            b = len(all_other_vertices) // 2
+            to_spread = random.randint(a, b)
+
+            lst = [to_bus_super_vertex, to_other_super_vertex, to_inside_bus, to_spread]
+            bus_edge_budgets.append(lst)
+        return bus_edge_budgets
+
     def generate_friends(self):
         """
-        Follow the API.
+        Main method for generating friend edges.
 
         Currently Implemented:
             - Made the vertices in the super set a clique.
+            - Created super set common friends.
         """
         for tup in itertools.combinations(list(self.super_set), 2):
             self.G.add_edge(tup[0], tup[1])
-        super_common_friends = self._create_super_set_common_friends(percentage=0.15)
+        super_set_common_friend_lst = self._create_super_set_common_friends(percentage=0.15)
 
-        # TODO: Friend / Edge generation.
+        bus_edge_budgets = self._assign_bus_budgets(super_set_common_friend_lst)
+        # Assign edges for each bus using the budgets
+        for i in range(self.bus_count):
+            budget_lst = bus_edge_budgets[i]
+            bus_vertices = set(self.solution[i])
+
+            # bus_super_vertices as is just in case we decide to change how the super_set is created.
+            bus_super_vertices = list(bus_vertices & self.super_set)
+            if not bus_super_vertices:
+                continue
+
+            # Edges to bus super vertex
+            U = random.sample(bus_vertices - self.super_set, budget_lst[0])
+            V = [random.choice(bus_super_vertices) for _ in range(budget_lst[0])]
+            self._assign_edges(U, V, prob=0.75)
+
+            # Edge to other super vertices:
+            U = random.sample(self.super_set - set(bus_super_vertices), budget_lst[1])
+            V = random.sample(bus_vertices, budget_lst[1])
+            self._assign_edges(U, V, prob=0.5)
+
+            # Internal bus edges
+            U = []
+            V = []
+            pool = list(bus_vertices - set(bus_super_vertices))
+            for _ in range(budget_lst[2]):
+                u = random.choice(pool)
+                U.append(random.choice(pool))
+                v = random.choice(pool)
+                while v == u:
+                    v = random.choice(pool)
+                V.append(v)
+            self._assign_edges(U, V, prob=0.7)
+
+            # Spread edges
+            U = np.random.choice(list(bus_vertices - self.super_set), size=budget_lst[3], replace=True)
+            V = random.sample((set(self.G.nodes) - self.super_set) - bus_vertices, budget_lst[3])
+            self._assign_edges(U, V, prob=0.2)
 
     def generate(self):
         """
@@ -155,9 +251,6 @@ class InputGenerator:
         self.write_solution("temp")
         self.write_input("graph", "parameters")
         score = output_scorer.score_output("temp", "temp/temp.out")
-        os.remove("temp/temp.out")
-        os.remove("temp/graph.gml")
-        os.remove("temp/parameters.txt")
         return score[0]
 
     def draw_graph(self):
@@ -166,10 +259,11 @@ class InputGenerator:
         are spaced out evenly on a horizontal line.
         """
         fixed_pos = {x: (y, 0) for x, y in
-                     zip(self.super_set, range(-len(self.super_set)+1, len(self.super_set), 2))}
+                     zip(self.super_set, range(0, len(self.super_set)*2, 2))}
         pos = nx.spring_layout(self.G, fixed=fixed_pos.keys(), pos=fixed_pos)
-        nx.draw_networkx(self.G, pos=pos)
-        print("Super Set: {}".format(self.super_set))
+        nx.draw_networkx(self.G, pos=pos, edge_color='g')
+        nx.draw_networkx_nodes(self.G, pos=pos, nodelist=self.super_set, node_color='b')
+        plt.axis('off')
         plt.show()
 
 
@@ -208,6 +302,9 @@ def main():
     print("Generated files in: {}".format(options.output_dir if options.output_dir else "same directory"))
     print("Score: {}".format(gen.score_graph()))
     print("Number of edges: {}".format(len(gen.G.edges)))
+    print("Top 20 Degrees: key = (vertex, degree):\n {}".format(
+        list(sorted(gen.G.degree, key=lambda x: x[1], reverse=True))[:20]))
+    print("Super Set: {}".format(gen.super_set))
     gen.draw_graph()
 
 
