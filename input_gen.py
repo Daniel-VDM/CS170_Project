@@ -7,6 +7,7 @@ import random
 import itertools
 import os
 import output_scorer
+from math import ceil
 
 
 class InputGenerator:
@@ -47,8 +48,14 @@ class InputGenerator:
         Separate super set creator on its own so that we can change
         this in the future.
         """
-        for group in self.solution:
-            self.super_set.add(group[0])
+        #Loop through busses and choose a member that we will add to superset
+        for bus in self.solution:
+            #generate a random index that we will add to the super_set
+            bus_population = len(bus)
+            random_index = np.random.randint(0, bus_population)
+            #add this randomly selected person to the superset
+            self.super_set.add(bus[random_index])
+
 
     def generate_constraints(self):
         """
@@ -59,10 +66,57 @@ class InputGenerator:
               has 1 person in the super set.
             - Added the |Super Set| choose 2 constraints as discussed.
         """
-        for tup in itertools.combinations(list(self.super_set), 2):
-            self.rowdy_groups.append(list(tup))
+        #helper method I defined here for correct scoping
+        def random_choose_2_combinations(lst):
+            """
+            Returns list of choose 2 combinations but shuffled to avoid bias towards
+            earlier busses in the case that we have to remove rowdy groups
+            """
+            combinations = list(itertools.combinations(lst, 2))
+            np.random.shuffle(combinations)
+            return combinations
 
-        # TODO: Extra constraints.
+        for tup in random_choose_2_combinations(list(self.super_set)):
+            if len(self.rowdy_groups) < self.constraint_count:
+                #make sure we don't go over the number of constraints we have allocated
+                self.rowdy_groups.append(list(tup))
+            else:
+                #if we do reach maximum number of constraints, terminate the function here
+                return
+
+        #first priority to add more constraints is to make busses almost complete rowdy groups
+        #these two numbers form the interval on percentage of bus to make a rowdy group
+        low, high = 0.85, 0.96 #set to 0.96 because numpy uniform produces values [low, high)
+        for bus in self.solution:
+            #once again, make sure we don't go over in constraint count
+            if len(self.rowdy_groups) > self.constraint_count:
+                return
+            #we randomly sample a group of 85-95% of the bus to make a rowdy group
+            #randomly choose a percentage of the bus to sample (uniform over interval)
+            percentage_of_bus = np.random.uniform(low, high)
+            number_sampled = ceil(percentage_of_bus * len(bus)) #number of people we pull into rowdy group rounded up
+
+            if number_sampled == len(bus):
+                #make sure we don't create a rowdy group that contains the whole bus
+                number_sampled -= 1
+
+            rowdy_group = list(np.random.choice(bus, size = number_sampled, replace = False))
+            #we now have to add a member or two from another bus so that we have rowdy groups all together
+            #first, sample a random bus, we have to sample the index because numpy can't sample 2-D lists
+            #we need the while loop to make sure we don't sample the bus we are currently on
+            flag = True
+            while flag:
+                bus_index = np.random.randint(0, len(self.solution))
+                random_bus = self.solution[bus_index]
+                if random_bus != bus:
+                    flag = False
+
+            #sample a student from this bus
+            students = list(np.random.choice(random_bus, size=np.random.choice([1,2]), replace=False))
+            #add this student to the rowdy group
+            rowdy_group += students
+            #add the new rowdy group
+            self.rowdy_groups.append(rowdy_group)
 
     def _assign_edges(self, U, V, prob):
         """
@@ -297,6 +351,7 @@ def main():
 
     gen = InputGenerator(options.kids_cnt, options.bus_cnt, options.constraint_size)
     gen.generate()
+    exit(0)
     gen.write_solution(options.output_name, options.output_dir)
     gen.write_input(options.output_name, options.output_name, options.output_dir)
     print("Generated files in: {}".format(options.output_dir if options.output_dir else "same directory"))
