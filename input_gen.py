@@ -12,13 +12,13 @@ from math import ceil
 
 class InputGenerator:
 
-    def __init__(self, kids_count, bus_count, constraint_count):
+    def __init__(self, kids_count, bus_count, constraint_size):
         """
         Params are passed in from the options parser in main.
         """
         self.kids_count = kids_count
         self.bus_count = bus_count
-        self.constraint_count = constraint_count
+        self.constraint_size = constraint_size
         self.bus_size = kids_count  # TBD, this should change during file generation.
         self.super_set = set()
         self.rowdy_groups = []
@@ -36,9 +36,9 @@ class InputGenerator:
         lst = list(self.G.nodes)
         random.shuffle(lst)
         sol = [list(l) for l in np.array_split(lst, self.bus_count)]
-        for _ in range(self.kids_count//self.bus_count):  # More loops = More uneven group sizes.
-            move_from = sol[random.randint(0, len(sol)-1)]
-            move_to = sol[random.randint(0, len(sol)-1)]
+        for _ in range(self.kids_count // self.bus_count):  # More loops = More uneven group sizes.
+            move_from = sol[random.randint(0, len(sol) - 1)]
+            move_to = sol[random.randint(0, len(sol) - 1)]
             if len(move_from) > 3:  # This is an arbitrary min size check that can be changed.
                 move_to.append(move_from.pop())
         self.solution = sol
@@ -48,25 +48,20 @@ class InputGenerator:
         Separate super set creator on its own so that we can change
         this in the future.
         """
-        #Loop through busses and choose a member that we will add to superset
+        # Loop through busses and choose a member that we will add to superset
         for bus in self.solution:
-            #generate a random index that we will add to the super_set
+            # generate a random index that we will add to the super_set
             bus_population = len(bus)
             random_index = np.random.randint(0, bus_population)
-            #add this randomly selected person to the superset
+            # add this randomly selected person to the superset
             self.super_set.add(bus[random_index])
-
 
     def generate_constraints(self):
         """
-        Follow the API.
-
-        Currently Implemented:
-            - Created a basic super set, were each bus in the solution
-              has 1 person in the super set.
-            - Added the |Super Set| choose 2 constraints as discussed.
+        Generates the constraints for the input. Depends on planted solution.
         """
-        #helper method I defined here for correct scoping
+
+        # helper method I defined here for correct scoping
         def random_choose_2_combinations(lst):
             """
             Returns list of choose 2 combinations but shuffled to avoid bias towards
@@ -77,33 +72,33 @@ class InputGenerator:
             return combinations
 
         for tup in random_choose_2_combinations(list(self.super_set)):
-            if len(self.rowdy_groups) < self.constraint_count:
-                #make sure we don't go over the number of constraints we have allocated
+            if len(self.rowdy_groups) < self.constraint_size:
+                # make sure we don't go over the number of constraints we have allocated
                 self.rowdy_groups.append(list(tup))
             else:
-                #if we do reach maximum number of constraints, terminate the function here
+                # if we do reach maximum number of constraints, terminate the function here
                 return
 
-        #first priority to add more constraints is to make busses almost complete rowdy groups
-        #these two numbers form the interval on percentage of bus to make a rowdy group
-        low, high = 0.85, 0.96 #set to 0.96 because numpy uniform produces values [low, high)
+        # first priority to add more constraints is to make busses almost complete rowdy groups
+        # these two numbers form the interval on percentage of bus to make a rowdy group
+        low, high = 0.85, 0.96  # set to 0.96 because numpy uniform produces values [low, high)
         for bus in self.solution:
-            #once again, make sure we don't go over in constraint count
-            if len(self.rowdy_groups) > self.constraint_count:
+            # once again, make sure we don't go over in constraint count
+            if len(self.rowdy_groups) > self.constraint_size:
                 return
-            #we randomly sample a group of 85-95% of the bus to make a rowdy group
-            #randomly choose a percentage of the bus to sample (uniform over interval)
+            # we randomly sample a group of 85-95% of the bus to make a rowdy group
+            # randomly choose a percentage of the bus to sample (uniform over interval)
             percentage_of_bus = np.random.uniform(low, high)
-            number_sampled = ceil(percentage_of_bus * len(bus)) #number of people we pull into rowdy group rounded up
+            number_sampled = ceil(percentage_of_bus * len(bus))  # number of people we pull into rowdy group rounded up
 
             if number_sampled == len(bus):
-                #make sure we don't create a rowdy group that contains the whole bus
+                # make sure we don't create a rowdy group that contains the whole bus
                 number_sampled -= 1
 
-            rowdy_group = list(np.random.choice(bus, size = number_sampled, replace = False))
-            #we now have to add a member or two from another bus so that we have rowdy groups all together
-            #first, sample a random bus, we have to sample the index because numpy can't sample 2-D lists
-            #we need the while loop to make sure we don't sample the bus we are currently on
+            rowdy_group = list(np.random.choice(bus, size=number_sampled, replace=False))
+            # we now have to add a member or two from another bus so that we have rowdy groups all together
+            # first, sample a random bus, we have to sample the index because numpy can't sample 2-D lists
+            # we need the while loop to make sure we don't sample the bus we are currently on
             flag = True
             while flag:
                 bus_index = np.random.randint(0, len(self.solution))
@@ -111,11 +106,11 @@ class InputGenerator:
                 if random_bus != bus:
                     flag = False
 
-            #sample a student from this bus
-            students = list(np.random.choice(random_bus, size=np.random.choice([1,2]), replace=False))
-            #add this student to the rowdy group
+            # sample a student from this bus
+            students = list(np.random.choice(random_bus, size=np.random.choice([1, 2]), replace=False))
+            # add this student to the rowdy group
             rowdy_group += students
-            #add the new rowdy group
+            # add the new rowdy group
             self.rowdy_groups.append(rowdy_group)
 
     def _assign_edges(self, U, V, prob):
@@ -177,7 +172,7 @@ class InputGenerator:
 
             # Tune these numbers/sets as needed.
             bus_solo_vertices = (bus - self.super_set) - set(common_friends[i])
-            a = (3*len(bus_solo_vertices)) // 4
+            a = (3 * len(bus_solo_vertices)) // 4
             b = len(bus_solo_vertices)
             to_bus_super_vertex = max(2, random.randint(a, b))
 
@@ -203,6 +198,7 @@ class InputGenerator:
     def generate_friends(self):
         """
         Main method for generating friend edges.
+        Depends on planted solution and super set.
 
         Currently Implemented:
             - Made the vertices in the super set a clique.
@@ -251,6 +247,12 @@ class InputGenerator:
             V = random.sample((set(self.G.nodes) - self.super_set) - bus_vertices, budget_lst[3])
             self._assign_edges(U, V, prob=0.2)
 
+    def set_bus_size(self):
+        """
+        Sets the size of the bus to be the size of the biggest
+        bus in the planted solution.
+        """
+        self.bus_size = max([len(l) for l in self.solution])
 
     def generate(self):
         """
@@ -262,6 +264,7 @@ class InputGenerator:
         self.generate_super_set()
         self.generate_constraints()
         self.generate_friends()
+        self.set_bus_size()
 
     def write_solution(self, file_name, directory="temp/"):
         """
@@ -285,6 +288,9 @@ class InputGenerator:
         :param param_file_name: "  "  "  "
         :param directory: directory string with slashes included.
         """
+        if len(self.rowdy_groups) > self.constraint_size:
+            raise ValueError("Rowdy group size ({}) > constraint max count: {}".format(
+                len(self.rowdy_groups), self.constraint_size))
         nx.write_gml(self.G, "{}{}.gml".format(directory, graph_file_name))
         with open("{}{}.txt".format(directory, param_file_name), 'w') as f:
             f.write("{}\n".format(self.bus_count))
@@ -314,7 +320,7 @@ class InputGenerator:
         are spaced out evenly on a horizontal line.
         """
         fixed_pos = {x: (y, 0) for x, y in
-                     zip(self.super_set, range(0, len(self.super_set)*2, 2))}
+                     zip(self.super_set, range(0, len(self.super_set) * 2, 2))}
         pos = nx.spring_layout(self.G, fixed=fixed_pos.keys(), pos=fixed_pos)
         nx.draw_networkx(self.G, pos=pos, edge_color='g')
         nx.draw_networkx_nodes(self.G, pos=pos, nodelist=self.super_set, node_color='b')
