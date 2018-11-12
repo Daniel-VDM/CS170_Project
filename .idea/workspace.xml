@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="5731f02d-528d-4279-8e13-3c7475228088" name="Default Changelist" comment="">
+    <list default="true" id="5731f02d-528d-4279-8e13-3c7475228088" name="Default Changelist" comment="Changed bus size">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/input_gen.py" beforeDir="false" afterPath="$PROJECT_DIR$/input_gen.py" afterDir="false" />
     </list>
@@ -79,8 +79,8 @@
       <file leaf-file-name="input_gen.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/input_gen.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="471">
-              <caret line="357" column="70" lean-forward="true" selection-start-line="357" selection-start-column="70" selection-end-line="357" selection-end-column="70" />
+            <state relative-caret-position="353">
+              <caret line="352" column="32" lean-forward="true" selection-start-line="352" selection-start-column="32" selection-end-line="352" selection-end-column="32" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -353,7 +353,14 @@
       <option name="project" value="LOCAL" />
       <updated>1541946932509</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="Changed bus size">
+      <created>1541982284973</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1541982284973</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -449,7 +456,8 @@
     <MESSAGE value="Finished the (majority) of friend edges. Updated some drawing code, and scoring code." />
     <MESSAGE value="Bug fix" />
     <MESSAGE value="Added trouble maker generation. And some code for score increasing swap constraining - not sure if this is useful." />
-    <option name="LAST_COMMIT_MESSAGE" value="Added trouble maker generation. And some code for score increasing swap constraining - not sure if this is useful." />
+    <MESSAGE value="Changed bus size" />
+    <option name="LAST_COMMIT_MESSAGE" value="Changed bus size" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -526,8 +534,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/input_gen.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="471">
-          <caret line="357" column="70" lean-forward="true" selection-start-line="357" selection-start-column="70" selection-end-line="357" selection-end-column="70" />
+        <state relative-caret-position="353">
+          <caret line="352" column="32" lean-forward="true" selection-start-line="352" selection-start-column="32" selection-end-line="352" selection-end-column="32" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>

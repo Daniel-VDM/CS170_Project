@@ -342,7 +342,7 @@ class InputGenerator:
         Sets the size of the bus to be the size of the biggest
         bus in the planted solution.
         """
-        self.bus_size = max([len(l) for l in self.rowdy_groups])
+        self.bus_size = max([len(l) for l in self.solution])
 
     def generate(self):
         """
