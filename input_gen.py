@@ -19,7 +19,7 @@ class InputGenerator:
         self.kids_count = kids_count
         self.bus_count = bus_count
         self.constraint_limit = constraint_size
-        self.bus_size = kids_count # TBD, this should change during file generation.
+        self.bus_size = kids_count  # TBD, this should change during file generation.
         self.super_set = set()
         self.rowdy_groups = []
         self.solution = []
@@ -342,7 +342,7 @@ class InputGenerator:
         Sets the size of the bus to be the size of the biggest
         bus in the planted solution.
         """
-        self.bus_size = max([len(l) for l in self.solution])
+        self.bus_size = max([len(l) for l in self.rowdy_groups])
 
     def generate(self):
         """
