@@ -26,6 +26,7 @@ class InputGenerator:
         self.G = nx.Graph()
         self.G.add_nodes_from((str(i) for i in range(kids_count)))
         self.trouble_makers = []
+        self.decoy = []
         self.G = self.G.to_undirected()  # Probably not needed
 
     def generate_solution(self):
@@ -207,7 +208,7 @@ class InputGenerator:
         """
         for tup in itertools.combinations(list(self.super_set), 2):
             self.G.add_edge(tup[0], tup[1])
-        super_set_common_friend_lst = self._create_super_set_common_friends(percentage=0.15)
+        super_set_common_friend_lst = self._create_super_set_common_friends(percentage=0.05)
 
         bus_edge_budgets = self._assign_bus_budgets(super_set_common_friend_lst)
         # Assign edges for each bus using the budgets
@@ -223,12 +224,12 @@ class InputGenerator:
             # Edges to bus super vertex
             U = random.sample(bus_vertices - self.super_set, budget_lst[0])
             V = [random.choice(bus_super_vertices) for _ in range(budget_lst[0])]
-            self._assign_edges(U, V, prob=0.75)
+            self._assign_edges(U, V, prob=0.7)
 
             # Edge to other super vertices:
             U = random.sample(self.super_set - set(bus_super_vertices), budget_lst[1])
             V = np.random.choice(list(bus_vertices), size=budget_lst[1], replace=True)
-            self._assign_edges(U, V, prob=0.5)
+            self._assign_edges(U, V, prob=0.3)
 
             # Internal bus edges
             U = []
@@ -246,7 +247,7 @@ class InputGenerator:
             # Spread edges
             U = np.random.choice(list(bus_vertices - self.super_set), size=budget_lst[3], replace=True)
             V = random.sample((set(self.G.nodes) - self.super_set) - bus_vertices, budget_lst[3])
-            self._assign_edges(U, V, prob=0.25)
+            self._assign_edges(U, V, prob=0.6)
 
     def constrain_score_increasing_swaps(self, verbose=True):
         """
@@ -259,6 +260,7 @@ class InputGenerator:
         Aim is to stop branching algorithms before they get
         to the planted solution.
         """
+
         def swap(lst1, lst2, a, b):
             """
             Helper to mutate lst args via swapping a and b.
@@ -333,9 +335,29 @@ class InputGenerator:
             # Make it a trouble maker with high degree vertices
             lst = sorted(self.G.degree(list(set(self.G.nodes) - self.super_set)),
                          key=lambda x: x[1], reverse=True)
-            for u in lst[:random.randint(0, self.bus_count//2)]:
+            for u in lst[:random.randint(0, self.bus_count // 2)]:
                 self.G.add_edge(u[0], vertex)
                 self.rowdy_groups.append([u[0], vertex])
+
+    def generate_decoy(self):
+        """
+        Generates decoy vertices that have the same degree as vertices in
+        the super set to obscure structure.
+        """
+        num_of_decoys = len(self.trouble_makers) + random.randint(0, len(self.super_set) // 2)
+        vertices = [v[0] for v in sorted(self.G.degree(list(set(self.G.nodes) - self.super_set)),
+                                         key=lambda x: x[1], reverse=True)][:num_of_decoys]
+        target_degree = sorted(self.G.degree, key=lambda x: x[1], reverse=True)[3][1]
+        try:
+            for v in vertices:
+                U = random.sample((set(self.G.nodes) - self.super_set) - set(v), target_degree - self.G.degree(v))
+                V = [v for _ in range(len(U))]
+                self._assign_edges(U, V, prob=1)
+                for t in self.trouble_makers:
+                    self.rowdy_groups.append([v, t])
+            self.decoy = vertices
+        except:  # Don't hate me.
+            self.generate_decoy()
 
     def set_bus_size(self):
         """
@@ -355,7 +377,8 @@ class InputGenerator:
         self.generate_constraints()
         self.generate_friends()
         self.generate_trouble_makers(random.randint(1, 3))
-        self.constrain_score_increasing_swaps()  # Might not use this.
+        self.generate_decoy()
+        # self.constrain_score_increasing_swaps()  # Might not use this.
         self.set_bus_size()
 
     def write_solution(self, file_name, directory="temp/"):
@@ -462,6 +485,7 @@ def main():
         list(sorted(gen.G.degree, key=lambda x: x[1], reverse=True))[:20]))
     print("Super Set: {}".format(gen.super_set))
     print("Trouble Makers: {}".format(gen.trouble_makers))
+    print("Decoy: {}".format(gen.decoy))
     if options.graph:
         gen.draw_graph()
 
