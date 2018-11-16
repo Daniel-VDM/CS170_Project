@@ -15,6 +15,39 @@ path_to_inputs = "./all_inputs"
 ###########################################
 path_to_outputs = "./outputs"
 
+
+class Solver:
+
+    def __init__(self, graph, num_buses, size_bus, constraints):
+        self.graph = graph
+        self.num_buses = num_buses
+        self.size_bus = size_bus
+        self.constraints = constraints
+        self.solution = []
+
+    def solve(self):
+        pass
+
+    def write(self):
+        pass
+
+    def socre(self):
+        pass
+
+    def draw(self):
+        pass
+
+class SolveHeuristic(Solver):
+    pass
+
+class SolveOptimizer(Solver):
+
+    def __init__(graph, num_buses, size_bus, constraints, solution):
+        Solver.__init__(self, graph, num_buses, size_bus, constraints)
+        self.solution = solution
+        pass
+
+
 def parse_input(folder_name):
     '''
         Parses an input and returns the corresponding graph and parameters
