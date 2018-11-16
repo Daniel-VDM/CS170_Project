@@ -1,0 +1,10 @@
+10
+50
+['summer', 'deadly', 'figure', 'ethnic', 'suffer', 'crouch', 'degree', 'bloody', 'punish', 'chorus']
+['forbid', 'heaven', 'ethics', 'retire', 'filter', 'strike', 'cereal', 'defeat', 'relief', 'admire']
+['heroin', 'virtue', 'system', 'factor', 'option', 'charge', 'thrust', 'poetry', 'blonde', 'matter']
+['timber', 'gutter', 'happen', 'credit', 'create', 'accent', 'middle', 'writer', 'tactic', 'worker']
+['valley', 'health', 'scream', 'poison', 'tongue', 'bomber', 'sermon', 'second', 'energy', 'gravel']
+['temple', 'comedy', 'follow', 'collar', 'letter', 'lesson', 'bucket', 'castle', 'murder', 'attack']
+['accept', 'garlic', 'escape', 'stable', 'detail', 'ritual', 'broken', 'aspect', 'morale', 'prison']
+['trench', 'labour', 'active', 'polish', 'market', 'adjust', 'insure', 'launch', 'asylum', 'snatch']
