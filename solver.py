@@ -37,12 +37,14 @@ class Solver:
     def draw(self):
         pass
 
+
 class SolveHeuristic(Solver):
     pass
 
+
 class SolveOptimizer(Solver):
 
-    def __init__(graph, num_buses, size_bus, constraints, solution):
+    def __init__(self, graph, num_buses, size_bus, constraints, solution):
         Solver.__init__(self, graph, num_buses, size_bus, constraints)
         self.solution = solution
         pass
