@@ -24,15 +24,92 @@ class Solver:
         self.size_bus = size_bus
         self.constraints = constraints
         self.solution = []
+        self.score = -1
 
     def solve(self):
         pass
 
-    def write(self):
-        pass
+    def write(self, file_name, directory="temp/"):
+        """
+        Writes our planted solution's .out file as specified in the
+        project spec. Returns true if successful. Only writes if the solution
+        has a valid score.
 
-    def socre(self):
-        pass
+        :param file_name: clean filename string with no file extension.
+        :param directory: directory string with slashes included.
+        """
+        if self.score < 0:
+            if self.scorer()[0] < 0:
+                return False
+
+        with open("{}{}.out".format(directory, file_name), 'w') as f:
+            for lst in self.solution:
+                f.write(str(lst))
+                f.write("\n")
+
+        return True
+
+    def scorer(self):
+        """
+        Formulates and returns the score of the self.solution, where the score is a number
+        between 0 and 1 which represents what fraction of friendships were broken.
+        """
+        graph = self.graph
+        num_buses = self.num_buses
+        size_bus = self.size_bus
+        constraints = self.constraints
+        assignments = self.solution
+
+        if len(assignments) != num_buses:
+            return -1, "Must assign students to exactly {} buses, found {} buses".format(num_buses, len(assignments))
+
+        # make sure no bus is empty or above capacity
+        for i in range(len(assignments)):
+            if len(assignments[i]) > size_bus:
+                return -1, "Bus {} is above capacity".format(i)
+            if len(assignments[i]) <= 0:
+                return -1, "Bus {} is empty".format(i)
+
+        bus_assignments = {}
+
+        # make sure each student is in exactly one bus
+        attendance = {student: False for student in graph.nodes()}
+        for i in range(len(assignments)):
+            if not all([student in graph for student in assignments[i]]):
+                return -1, "Bus {} references a non-existant student: {}".format(i, assignments[i])
+
+            for student in assignments[i]:
+                # if a student appears more than once
+                if attendance[student]:
+                    print(assignments[i])
+                    return -1, "{0} appears more than once in the bus assignments".format(student)
+
+                attendance[student] = True
+                bus_assignments[student] = i
+
+        # make sure each student is accounted for
+        if not all(attendance.values()):
+            return -1, "Not all students have been assigned a bus"
+
+        total_edges = graph.number_of_edges()
+        # Remove nodes for rowdy groups which were not broken up
+        for i in range(len(constraints)):
+            buses = set()
+            for student in constraints[i]:
+                buses.add(bus_assignments[student])
+            if len(buses) <= 1:
+                for student in constraints[i]:
+                    if student in graph:
+                        graph.remove_node(student)
+
+        # score output
+        score = 0
+        for edge in graph.edges():
+            if bus_assignments[edge[0]] == bus_assignments[edge[1]]:
+                score += 1
+        score = score / total_edges
+
+        return score, "Valid output submitted with score: {}".format(score)
 
     def draw(self):
         pass
