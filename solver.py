@@ -1,5 +1,6 @@
 import networkx as nx
 import os
+import numpy as np
 
 ###########################################
 # Change this variable to the path to 
@@ -31,7 +32,7 @@ class Solver:
     def write(self):
         pass
 
-    def socre(self):
+    def score(self):
         pass
 
     def draw(self):
@@ -42,12 +43,39 @@ class SolveHeuristic(Solver):
     pass
 
 
-class SolveOptimizer(Solver):
+class Optimizer(Solver):
 
-    def __init__(self, graph, num_buses, size_bus, constraints, solution):
-        Solver.__init__(self, graph, num_buses, size_bus, constraints)
-        self.solution = solution
-        pass
+    def __init__(self, graph, num_buses, size_bus, constraints, solution, method='basic'):
+
+        if method == 'basic':
+            self.optimizer = BasicOptimizer(graph, num_buses, size_bus, constraints, solution)
+
+    def solve(self):
+        self.optimizer.optimize()
+
+class BasicOptimizer(Optimizer):
+
+    def __init__(self, graph, num_buses, size_bus, constraints, solution, sample_size=100):
+        super(self).__init__(graph, num_buses, size_bus, constraints, solution)
+        self.sample_size = sample_size
+
+    # Call this method to optimize the solution we are given for a specific score
+    def optimize(self, max_iterations=1000):
+        # If we don't have two buses no swapping will occur
+
+        if self.num_buses < 2:
+            return self.solution
+        # Each iteration we will discover one swap to make
+        for i in range(max_iterations):
+            # If we have monte_carlo set to true we will sample the optimization space
+            for sample in range(self.sample_size):
+                # Sample a number of vertex combinations to try swapping
+                # Pick two random buses and one random vertex from each bus to swap
+                bus1, bus2 = np.random.choice(list(range(self.num_buses)), 2, replace=False)
+                # Sample a vertex from each bus
+                vertex1 = 
+
+
 
 
 def parse_input(folder_name):
