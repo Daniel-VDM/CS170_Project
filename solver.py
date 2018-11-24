@@ -19,10 +19,10 @@ path_to_outputs = "./outputs"
 
 class Solver:
 
-    def __init__(self, graph, num_buses, size_bus, constraints):
+    def __init__(self, graph, num_buses, bus_size, constraints):
         self.graph = graph
         self.num_buses = num_buses
-        self.size_bus = size_bus
+        self.bus_size = bus_size
         self.constraints = constraints
         self.solution = []
         self.score = -1
@@ -63,7 +63,7 @@ class Solver:
         """
         graph = self.graph
         num_buses = self.num_buses
-        size_bus = self.size_bus
+        bus_size = self.bus_size
         constraints = self.constraints
         assignments = self.solution
 
@@ -72,7 +72,7 @@ class Solver:
 
         # make sure no bus is empty or above capacity
         for i in range(len(assignments)):
-            if len(assignments[i]) > size_bus:
+            if len(assignments[i]) > bus_size:
                 return -1, "Bus {} is above capacity".format(i)
             if len(assignments[i]) <= 0:
                 return -1, "Bus {} is empty".format(i)
@@ -128,24 +128,51 @@ class SolveHeuristic(Solver):
 
 class Optimizer(Solver):
 
-    def __init__(self, graph, num_buses, size_bus, constraints, solution, method='basic'):
+    def __init__(self, graph, num_buses, bus_size, constraints, solution, method='basic'):
 
         if method == 'basic':
-            self.optimizer = BasicOptimizer(graph, num_buses, size_bus, constraints, solution)
+            self.optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solution)
 
     def solve(self):
         self.optimizer.optimize()
 
 class BasicOptimizer(Optimizer):
 
-    def __init__(self, graph, num_buses, size_bus, constraints, solution, sample_size=100):
-        super(self).__init__(graph, num_buses, size_bus, constraints, solution)
+    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100):
+        super(self).__init__(graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
+
+    def count_friends_in_bus(self, vertex, bus):
+        # loop through bus list and see if each element is a friend
+        count = 0
+
+        for student in self.solution[bus]:
+            if len(self.graph.edges[vertex, student]) != 0:
+                count += 1
+
+        return count
+
+
+    def swap(self, vertex_1, vertex_2, bus1, bus2, curr_score):
+        # Swaps the two vertices and returns a tuple with the new solution and a score
+        # Count the number of friends lost in each bus by the swap
+        original_friends_vertex_1 = self.count_friends_in_bus(vertex_1, bus1) if vertex_1 is not None else 0
+        original_friends_vertex_2 = self.count_friends_in_bus(vertex_2, bus2) if vertex_2 is not None else 0
+        new_friends_vertex_1 = self.count_friends_in_bus(vertex_1, bus2) if vertex_1 is not None else 0
+        new_friends_vertex_2 = self.count_friends_in_bus(vertex_2, bus2) if vertex_2 is not None else 0
+
+        curr_score = curr_score - (original_friends_vertex_1 + original_friends_vertex_2) + (new_friends_vertex_1 + new_friends_vertex_2)
+
+        # TODO: check for rowdy groups that formed from swap to update score
+        return 0
+
 
     # Call this method to optimize the solution we are given for a specific score
     def optimize(self, max_iterations=1000):
-        # If we don't have two buses no swapping will occur
+        # The initial score
+        score = self.score()
 
+        # If we don't have two buses no swapping will occur
         if self.num_buses < 2:
             return self.solution
         # Each iteration we will discover one swap to make
@@ -156,7 +183,29 @@ class BasicOptimizer(Optimizer):
                 # Pick two random buses and one random vertex from each bus to swap
                 bus1, bus2 = np.random.choice(list(range(self.num_buses)), 2, replace=False)
                 # Sample a vertex from each bus
-                vertex1 = None
+                open_seats1 = self.bus_size - len(self.solution[bus1])
+                # Determine if we select an empty seat or not
+                choose_empty_seat = np.random.binomial(1, open_seats1 / self.bus_size)
+
+                # Choose the first student, possibly an empty seat that we swap the second student to
+                if choose_empty_seat:
+                    student_1 = None
+                else:
+                    student_1 = np.random.choice(self.solution)
+
+                # Choose a second student with the requirement that we not try to swap two empty seats
+                if student_1 is None:
+                    # student_2 cannot be none
+                    student_2 = np.random.choice(self.solution[bus2])
+                else:
+                    open_seats2 = self.bus_size - len(self.solution[bus2])
+                    choose_empty_seat = np.random.binomial(1, open_seats2 / self.bus_size)
+
+                    student_2 = None if choose_empty_seat else np.random.choice(self.solution[bus2])
+
+                # Swap these two students
+                new_score, new_sol = self.swap(student_1, student_2, bus1, bus2, score)
+
 
 
 
@@ -169,16 +218,16 @@ def parse_input(folder_name):
             folder_name - a string representing the path to the input folder
 
         Outputs:
-            (graph, num_buses, size_bus, constraints)
+            (graph, num_buses, bus_size, constraints)
             graph - the graph as a NetworkX object
             num_buses - an integer representing the number of buses you can allocate to
-            size_buses - an integer representing the number of students that can fit on a bus
+            bus_sizees - an integer representing the number of students that can fit on a bus
             constraints - a list where each element is a list vertices which represents a single rowdy group
     '''
     graph = nx.read_gml(folder_name + "/graph.gml")
     parameters = open(folder_name + "/parameters.txt")
     num_buses = int(parameters.readline())
-    size_bus = int(parameters.readline())
+    bus_size = int(parameters.readline())
     constraints = []
     
     for line in parameters:
@@ -186,9 +235,9 @@ def parse_input(folder_name):
         curr_constraint = [num.replace("'", "") for num in line.split(", ")]
         constraints.append(curr_constraint)
 
-    return graph, num_buses, size_bus, constraints
+    return graph, num_buses, bus_size, constraints
 
-def solve(graph, num_buses, size_bus, constraints):
+def solve(graph, num_buses, bus_size, constraints):
     #TODO: Write this method as you like. We'd recommend changing the arguments here as well
     pass
 
@@ -213,8 +262,8 @@ def main():
 
         for input_folder in os.listdir(category_dir):
             input_name = os.fsdecode(input_folder) 
-            graph, num_buses, size_bus, constraints = parse_input(category_path + "/" + input_name)
-            solution = solve(graph, num_buses, size_bus, constraints)
+            graph, num_buses, bus_size, constraints = parse_input(category_path + "/" + input_name)
+            solution = solve(graph, num_buses, bus_size, constraints)
             output_file = open(output_category_path + "/" + input_name + ".out", "w")
 
             #TODO: modify this to write your solution to your 
