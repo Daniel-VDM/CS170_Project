@@ -141,6 +141,8 @@ class BasicOptimizer(Optimizer):
     def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100):
         super(self).__init__(graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
+        # To keep track of the score as we make optimizer steps
+        self.curr_score = self.score()
 
     def count_friends_in_bus(self, vertex, bus):
         # loop through bus list and see if each element is a friend
@@ -152,25 +154,41 @@ class BasicOptimizer(Optimizer):
 
         return count
 
+    def rowdy_groups_with_vertex(self, vertex, bus):
+        # Returns the COMPLETE rowdy groups in the input bus that the input vertex is part of
+        # Loop through the constraint groups
+        # This list will keep track of which rowdy groups are complete
+        truth_list = [True] * len(self.constraints)
 
-    def swap(self, vertex_1, vertex_2, bus1, bus2, curr_score):
+        for index, rowdy_group in enumerate(self.constraints):
+            # First check if the vertex in question is even a part of this rowdy group
+            if vertex in rowdy_group:
+                # Check to see if the rest of the rowdy group is in the bus
+                for member in rowdy_group:
+                    if member not in self.solution[bus] and member is not vertex:
+                        # This rowdy group is not complete in the bus, so we flip the truth value
+                        truth_list[index] = False
+
+        return [self.constraints[i] for i in range(len(self.constraints)) if truth_list[i]]
+
+
+    def swap(self, vertex_1, vertex_2, bus1, bus2):
         # Swaps the two vertices and returns a tuple with the new solution and a score
+        # NOTE: The new solution is only swapped if the new score is better
         # Count the number of friends lost in each bus by the swap
         original_friends_vertex_1 = self.count_friends_in_bus(vertex_1, bus1) if vertex_1 is not None else 0
         original_friends_vertex_2 = self.count_friends_in_bus(vertex_2, bus2) if vertex_2 is not None else 0
         new_friends_vertex_1 = self.count_friends_in_bus(vertex_1, bus2) if vertex_1 is not None else 0
         new_friends_vertex_2 = self.count_friends_in_bus(vertex_2, bus2) if vertex_2 is not None else 0
 
-        curr_score = curr_score - (original_friends_vertex_1 + original_friends_vertex_2) + (new_friends_vertex_1 + new_friends_vertex_2)
+        new_score = self.curr_score - (original_friends_vertex_1 + original_friends_vertex_2) + (new_friends_vertex_1 + new_friends_vertex_2)
 
-        # TODO: check for rowdy groups that formed from swap to update score
-        return 0
+        # Check differences caused by forming/breaking up rowdy groups
+        pass
 
 
     # Call this method to optimize the solution we are given for a specific score
     def optimize(self, max_iterations=1000):
-        # The initial score
-        score = self.score()
 
         # If we don't have two buses no swapping will occur
         if self.num_buses < 2:
@@ -204,7 +222,7 @@ class BasicOptimizer(Optimizer):
                     student_2 = None if choose_empty_seat else np.random.choice(self.solution[bus2])
 
                 # Swap these two students
-                new_score, new_sol = self.swap(student_1, student_2, bus1, bus2, score)
+                self.swap(student_1, student_2, bus1, bus2)
 
 
 
