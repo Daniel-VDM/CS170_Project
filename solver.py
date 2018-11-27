@@ -158,7 +158,7 @@ class BasicOptimizer(Optimizer):
         # Setup methods for quick access
         #self.set_bus_map()
         #self.set_invalid_vertices()
-        
+
     """
     def set_bus_map(self):
         # Sets up a mapping from vertex to bus
