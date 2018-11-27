@@ -1,6 +1,7 @@
 import networkx as nx
 import os
 import numpy as np
+from collections import deque
 
 ###########################################
 # Change this variable to the path to 
@@ -128,8 +129,168 @@ class Solver:
         pass
 
 
-class SolveHeuristic(Solver):
-    pass
+class Heuristic(Solver):
+
+    def __init__(self, graph, num_buses, bus_size, constraints):
+        Solver.__init__(self, graph, num_buses, bus_size, constraints)
+        self.solution = [[] for _ in range(self.num_buses)]
+        self.solution_set_rep = np.array([set() for _ in range(self.num_buses)])
+        self.process_queue = deque()
+        self.node_to_rowdy_index_dict = {}
+        for node in self.graph.nodes():
+            lst = []
+            for i in range(len(self.constraints)):
+                if node in self.constraints[i]:
+                    lst.append(i)
+            self.node_to_rowdy_index_dict[node] = lst[:]
+
+    def set_process_queue(self, kind="LOW_DEGREE"):
+        """
+        Method to set the process queue of heuristic solvers.
+
+        :param kind: (str) of how we want to order the children.
+            'LOW_DEGREE' = lowest to highest degree children / nodes.
+        :return: A queue (deque obj) of the order in which the
+            heuristic will be processed. So the order of how the
+            children get added to the solution.
+        """
+        kind = kind.upper()
+        self.process_queue.clear()
+        if kind == "LOW_DEGREE":
+            for node in sorted(self.graph.degree, key=lambda x: x[1]):
+                self.process_queue.append(node[0])
+        elif kind == "HIGH_DEGREE":
+            for node in sorted(self.graph.degree, key=lambda x: x[1], reverse=True):
+                self.process_queue.append(node[0])
+        return self.process_queue
+
+    def heuristic(self, bus_num, target):
+        """
+        This 'heuristic' should not be use. This is only used for development reasons.
+        Heuristic is number of friends (of target) in bus number: BUS_NUM
+
+        :param target: current node being processed
+        :param bus_num: the heuristic for the current buss being processed
+        :return: (float) heuristic value
+        """
+        bus_set_rep = self.solution_set_rep[bus_num]
+        if len(bus_set_rep) + 1 > self.bus_size:
+            return -1
+        count = 0
+        for v in self.graph.neighbors(target):
+            if v in bus_set_rep:
+                count += 1
+        return count
+
+    def solve(self):
+        """
+        The main heuristic solver method.
+        :return: self.solutions after a solution is found.
+        """
+        self.set_process_queue(kind='low_degree')
+
+        # Create a preliminary solution that does not satisfy the following constraints:
+        #   - Non-empty buses
+        #   - Bus size
+        while self.process_queue:
+            target = self.process_queue.popleft()  # queue popping b/c we might use prio-queue
+            max_tup = (-1, -1)
+            for i in range(self.num_buses):
+                heuristic = self.heuristic(i, target)
+                if heuristic > max_tup[0]:
+                    max_tup = (heuristic, i)
+            self.solution[max_tup[1]].append(target)
+            self.solution_set_rep[max_tup[1]].add(target)
+
+        # TODO: some sort of greedy correction possibly using the same heuristic...
+        # So, Take lowest degree vertices of oversize buses and add them to non-full buses using heuristic.
+        # Keep doing until no oversize buses.
+        # Maybe add a full bus check to this part's heuristic.
+        #       - Maybe make full bus checking similar to a temperature check / probability thing?
+        #         This allows you to hop around?
+
+        # TODO: local search (starting at preliminary solution from above) for a satisfying solution.
+
+
+class DiracDeltaHeuristic(Heuristic):
+
+    def _friend_on_buss_count(self, bus_num, target):
+        """
+        Private Method
+        Counts the number of friends that TARGET currently has in bus number: BUS_NUM
+            this is function: f(.,.) in the design doc.
+        :param bus_num: (int) the bus number in self.solution
+            this is b in the design doc.
+        :param target: (nx node) the node being processed.
+            this is i in the design doc.
+        :return: (int) number of friends of node: TARGET in bus number: BUS_NUM.
+        """
+        bus_set_rep = self.solution_set_rep[bus_num]
+        count = 0
+        for v in self.graph.neighbors(target):
+            if v in bus_set_rep:
+                count += 1
+        return count
+
+    def _rowdy_group_count(self, bus_num, target, rowdy_group):
+        """
+        Private Method
+        Counts the number of people in bus number: BUS_NUM that are in ROWDY_GROUP
+            with TARGET. This is function: r(.,.,.) in the design doc.
+        :param bus_num: (int) the bus number in self.solution
+            this is b in the design doc.
+        :param target: (nx node) the node being processed.
+            this is i in the design doc.
+        :param rowdy_group: (list) the list of nodes that are in a rowdy group
+            this is g in the design doc.
+        :return: (int) the count.
+        """
+        if target not in rowdy_group:
+            raise ValueError("{} is not in {} when calculating heuristic".format(target, rowdy_group))
+        bus_set_rep = self.solution_set_rep[bus_num]
+        if not bus_set_rep:
+            return 0
+        count = 0
+        for v in rowdy_group:
+            if v in bus_set_rep:
+                count += 1
+        return count
+
+    def _dirac_delta(self, n, rowdy_size):
+        """
+        Private Method
+        This is the nonlinear function: phi(.) in the design doc.
+        :param n: number of people on the bus that is in the given rowdy group.
+            this is the result of r(i,b,g) in the design doc.
+        :param rowdy_size: Number of people in the given rowdy group.
+            this is |g| in the design doc.
+        :return: (int)
+        """
+        # TODO: the dirac_delta
+        return 1
+
+    def heuristic(self, bus_num, target):
+        """
+        The heuristic. (overrides inherited heuristic)
+            This is H(.,.) in the design doc
+        :param target: current node being processed
+        :param bus_num: the heuristic for the current buss being processed
+        :return: (float) heuristic value
+        """
+        # TODO: consider the size of the bus
+        # numerator calculation
+        numerator = self._friend_on_buss_count(bus_num, target) + 1
+
+        # denominator calculation
+        max_val = 0
+        target_rowdy_groups = [self.constraints[i] for i in self.node_to_rowdy_index_dict[target]]
+        for grp in target_rowdy_groups:
+            r = self._rowdy_group_count(bus_num, target, grp)
+            phi = self._dirac_delta(r, len(grp))  # Phi can be changed and experimented with.
+            max_val = max(max_val, phi)
+        denominator = max_val + 1
+
+        return numerator / denominator
 
 
 # noinspection PyMissingConstructor
@@ -270,7 +431,7 @@ def solve(graph, num_buses, bus_size, constraints):
     """
     # TODO: Real solver logic.
     # Currently it is some temp test code.
-    solver = Solver(graph, num_buses, bus_size, constraints)
+    solver = DiracDeltaHeuristic(graph, num_buses, bus_size, constraints)
     solver.solve()
     return solver
 
