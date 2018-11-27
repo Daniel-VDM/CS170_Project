@@ -31,13 +31,10 @@ class Solver:
     def solve(self):
         pass
 
-    def write(self):
-        pass
-
     def score(self):
         pass
 
-    def write(self, file_name, directory="temp/"):
+    def write(self, file_name, directory, verbose=False):
         """
         Writes our planted solution's .out file as specified in the
         project spec. Returns true if successful. Only writes if the solution
@@ -45,22 +42,32 @@ class Solver:
 
         :param file_name: clean filename string with no file extension.
         :param directory: directory string with slashes included.
+        :param verbose: print message or not.
+        :raises: ValueError if the score is not valid, with an accompanying message.
         """
-        if self.score < 0:
-            if self.scorer()[0] < 0:
-                return False
+        score, msg = self.set_score()
+        if score < 0:
+            raise ValueError("Solution object for {}{} has a negative score. "
+                             "Scorer Message: {}".format(directory, file_name, msg))
+
+        # TODO: only write the file if the score of the new solution is better than the old one.
+
+        if verbose:
+            print("Score for {}{}:  {}".format(directory, file_name, score))
 
         with open("{}{}.out".format(directory, file_name), 'w') as f:
             for lst in self.solution:
                 f.write(str(lst))
                 f.write("\n")
 
-        return True
-
-    def scorer(self):
+    def set_score(self):
         """
         Formulates and returns the score of the self.solution, where the score is a number
         between 0 and 1 which represents what fraction of friendships were broken.
+
+        Sets self.score
+
+        :return: Tuple where el 0 is the score and el 1 is the accompanying msg string.
         """
         graph = self.graph
         num_buses = self.num_buses
@@ -115,9 +122,8 @@ class Solver:
         for edge in graph.edges():
             if bus_assignments[edge[0]] == bus_assignments[edge[1]]:
                 score += 1
-        score = score / total_edges
-
-        return score, "Valid output submitted with score: {}".format(score)
+        self.score = score / total_edges
+        return self.score, "Valid score of: {}".format(self.score)
 
     def draw(self):
         pass
@@ -127,16 +133,18 @@ class SolveHeuristic(Solver):
     pass
 
 
+# noinspection PyMissingConstructor
 class Optimizer(Solver):
 
     def __init__(self, graph, num_buses, bus_size, constraints, solution, method='basic'):
-
         if method == 'basic':
             self.optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solution)
 
     def solve(self):
         self.optimizer.optimize()
 
+
+# noinspection PyMissingConstructor
 class BasicOptimizer(Optimizer):
 
     def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100):
@@ -150,6 +158,7 @@ class BasicOptimizer(Optimizer):
         # Setup methods for quick access
         #self.set_bus_map()
         #self.set_invalid_vertices()
+        
     """
     def set_bus_map(self):
         # Sets up a mapping from vertex to bus
@@ -184,7 +193,8 @@ class BasicOptimizer(Optimizer):
 
         # Set the truth array to be an instance variable
         self.is_invalid = truth_dict
-
+        
+        self.curr_score = self.set_score()
 
     def count_friends_in_bus(self, vertex, bus):
         # loop through bus list and see if each element is a friend
@@ -212,7 +222,7 @@ class BasicOptimizer(Optimizer):
                         truth_list[index] = False
 
         return [self.constraints[i] for i in range(len(self.constraints)) if truth_list[i]]
-    """
+        """
     def remove_vertex(self, vertex, bus):
         # get the bus
         temp_list = self.solution[bus]
@@ -241,7 +251,8 @@ class BasicOptimizer(Optimizer):
         new_friends_vertex_1 = self.count_friends_in_bus(vertex_1, bus2) if vertex_1 is not None else 0
         new_friends_vertex_2 = self.count_friends_in_bus(vertex_2, bus2) if vertex_2 is not None else 0
 
-        new_score = self.curr_score - (original_friends_vertex_1 + original_friends_vertex_2) + (new_friends_vertex_1 + new_friends_vertex_2)
+        new_score = self.curr_score - (original_friends_vertex_1 + original_friends_vertex_2) + (
+                    new_friends_vertex_1 + new_friends_vertex_2)
 
         # Check differences caused by forming/breaking up rowdy groups
         original_rowdy_groups_vertex_1 = self.rowdy_groups_with_vertex(vertex_1, bus1) if vertex_1 is not None else 0
@@ -305,11 +316,12 @@ class BasicOptimizer(Optimizer):
                     student_2 = None if choose_empty_seat else np.random.choice(self.solution[bus2])
 
                 # Swap these two students
+
                 score = self.swap(student_1, student_2, bus1, bus2, score)
 
 
 def parse_input(folder_name):
-    '''
+    """
         Parses an input and returns the corresponding graph and parameters
 
         Inputs:
@@ -321,13 +333,13 @@ def parse_input(folder_name):
             num_buses - an integer representing the number of buses you can allocate to
             bus_sizees - an integer representing the number of students that can fit on a bus
             constraints - a list where each element is a list vertices which represents a single rowdy group
-    '''
+    """
     graph = nx.read_gml(folder_name + "/graph.gml")
     parameters = open(folder_name + "/parameters.txt")
     num_buses = int(parameters.readline())
     bus_size = int(parameters.readline())
     constraints = []
-    
+
     for line in parameters:
         line = line[1: -2]
         curr_constraint = [num.replace("'", "") for num in line.split(", ")]
@@ -335,17 +347,31 @@ def parse_input(folder_name):
 
     return graph, num_buses, bus_size, constraints
 
+
 def solve(graph, num_buses, bus_size, constraints):
-    #TODO: Write this method as you like. We'd recommend changing the arguments here as well
+    """
+    Params are obvious, they are from the skeleton code.
+    :return: The solver instance.
+
+    Note: we might have this function branch off (by calling other functions)
+    depending on some future solvers that we implement.
+    """
+    # TODO: Real solver logic.
+    # Currently it is some temp test code.
+    solver = Solver(graph, num_buses, bus_size, constraints)
+    solver.solve()
+    return solver
+
     pass
 
+
 def main():
-    '''
+    """
         Main method which iterates over all inputs and calls `solve` on each.
         The student should modify `solve` to return their solution and modify
         the portion which writes it to a file to make sure their output is
         formatted correctly.
-    '''
+    """
     size_categories = ["small", "medium", "large"]
     if not os.path.isdir(path_to_outputs):
         os.mkdir(path_to_outputs)
@@ -354,24 +380,16 @@ def main():
         category_path = path_to_inputs + "/" + size
         output_category_path = path_to_outputs + "/" + size
         category_dir = os.fsencode(category_path)
-        
+
         if not os.path.isdir(output_category_path):
             os.mkdir(output_category_path)
 
         for input_folder in os.listdir(category_dir):
-            input_name = os.fsdecode(input_folder) 
+            input_name = os.fsdecode(input_folder)
             graph, num_buses, bus_size, constraints = parse_input(category_path + "/" + input_name)
-            solution = solve(graph, num_buses, bus_size, constraints)
-            output_file = open(output_category_path + "/" + input_name + ".out", "w")
+            solver_instance = solve(graph, num_buses, bus_size, constraints)
+            solver_instance.write(input_name, "{}/".format(category_path), True)
 
-            #TODO: modify this to write your solution to your 
-            #      file properly as it might not be correct to 
-            #      just write the variable solution to a file
-            output_file.write(solution)
-
-            output_file.close()
 
 if __name__ == '__main__':
     main()
-
-
