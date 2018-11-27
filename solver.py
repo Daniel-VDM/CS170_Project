@@ -293,6 +293,7 @@ def main():
 
         if not os.path.isdir(output_category_path):
             os.mkdir(output_category_path)
+        z = os.listdir(category_dir)
 
         for input_folder in os.listdir(category_dir):
             input_name = os.fsdecode(input_folder)
