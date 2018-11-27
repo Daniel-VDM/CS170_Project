@@ -203,6 +203,9 @@ class Heuristic(Solver):
             self.solution[max_tup[1]].append(target)
             self.solution_set_rep[max_tup[1]].add(target)
 
+        # NOTE: We might have to do some interesting things with the heuristic formatting to check
+        # and make sure that it is working correctly.
+
         # TODO: some sort of greedy correction possibly using the same heuristic...
         # So, Take lowest degree vertices of oversize buses and add them to non-full buses using heuristic.
         # Keep doing until no oversize buses.
