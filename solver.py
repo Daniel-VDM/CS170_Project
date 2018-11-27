@@ -167,7 +167,9 @@ class Heuristic(Solver):
 
     def heuristic(self, bus_num, target):
         """
-        This 'heuristic' should not be use. This is only used for development reasons.
+        This 'heuristic' should NOT be use.
+        This is only used for development reasons.
+
         Heuristic is number of friends (of target) in bus number: BUS_NUM
 
         :param target: current node being processed
@@ -175,8 +177,10 @@ class Heuristic(Solver):
         :return: (float) heuristic value
         """
         bus_set_rep = self.solution_set_rep[bus_num]
+
         if len(bus_set_rep) + 1 > self.bus_size:
             return -1
+
         count = 0
         for v in self.graph.neighbors(target):
             if v in bus_set_rep:
@@ -273,6 +277,7 @@ class DiracDeltaHeuristic(Heuristic):
         :return: (int)
         """
         # TODO: the dirac_delta
+        # DO THIS FIRSTTTTTTTTTTTTTT
         return 1
 
     def heuristic(self, bus_num, target):
