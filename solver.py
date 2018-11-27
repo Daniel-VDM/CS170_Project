@@ -44,7 +44,7 @@ class Solver:
         :param verbose: print message or not.
         :raises: ValueError if the score is not valid, with an accompanying message.
         """
-        score, msg = self.setScore()
+        score, msg = self.set_score()
         if score < 0:
             raise ValueError("Solution object for {}{} has a negative score. "
                              "Scorer Message: {}".format(directory, file_name, msg))
@@ -59,7 +59,7 @@ class Solver:
                 f.write(str(lst))
                 f.write("\n")
 
-    def setScore(self):
+    def set_score(self):
         """
         Formulates and returns the score of the self.solution, where the score is a number
         between 0 and 1 which represents what fraction of friendships were broken.
@@ -148,7 +148,7 @@ class BasicOptimizer(Optimizer):
         super(self).__init__(graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
         # To keep track of the score as we make optimizer steps
-        self.curr_score = self.setScore()
+        self.curr_score = self.set_score()
 
     def count_friends_in_bus(self, vertex, bus):
         # loop through bus list and see if each element is a friend
