@@ -2,6 +2,7 @@ import networkx as nx
 import os
 import numpy as np
 from collections import deque
+import copy
 
 ###########################################
 # Change this variable to the path to 
@@ -248,8 +249,10 @@ class DiracDeltaHeuristic(Heuristic):
         if target not in rowdy_group:
             raise ValueError("{} is not in {} when calculating heuristic".format(target, rowdy_group))
         bus_set_rep = self.solution_set_rep[bus_num]
+
         if not bus_set_rep:
             return 0
+
         count = 0
         for v in rowdy_group:
             if v in bus_set_rep:
@@ -312,6 +315,49 @@ class BasicOptimizer(Optimizer):
         self.sample_size = sample_size
         # To keep track of the score as we make optimizer steps
         self.curr_score = self.set_score()
+        # Setup instance variables
+        # self.bus_mapping = None
+        # self.is_invalid = None
+        # Setup methods for quick access
+        # self.set_bus_map()
+        # self.set_invalid_vertices()
+
+    """
+    def set_bus_map(self):
+        # Sets up a mapping from vertex to bus
+        mapping = {}
+
+        for index, bus in enumerate(self.solution):
+            for member in bus:
+                mapping[member] = index
+
+        self.bus_mapping = mapping
+
+    def set_invalid_vertices(self):
+        # Sets up a dictionary of vertices from vertex to truth value that tells us whether this vertex is invalid
+        # This dictionary will change throughout the optimization process
+        truth_dict = {}
+        # Set this truth dict to an initial value
+
+        for rowdy_group in self.constraints:
+            all_in_bus = True
+            bus_index = self.bus_mapping[rowdy_group[0]]
+
+            for member in rowdy_group:
+                # Check to see if they're all in the bus above
+                if self.bus_mapping[member] != bus_index:
+                    all_in_bus = False
+                    break
+
+            # After checking a rowdy group if our flag is not false we invalidate these edges
+            if all_in_bus:
+                for member in rowdy_group:
+                    truth_dict[member] = True
+
+        # Set the truth array to be an instance variable
+        self.is_invalid = truth_dict
+        
+        self.curr_score = self.set_score()
 
     def count_friends_in_bus(self, vertex, bus):
         # loop through bus list and see if each element is a friend
@@ -339,11 +385,29 @@ class BasicOptimizer(Optimizer):
                         truth_list[index] = False
 
         return [self.constraints[i] for i in range(len(self.constraints)) if truth_list[i]]
+        """
+    def remove_vertex(self, vertex, bus):
+        # get the bus
+        temp_list = self.solution[bus]
+        left_hand_list = []
+        right_hand_list = []
+        seen_element = False
 
-    def swap(self, vertex_1, vertex_2, bus1, bus2):
+        for element in temp_list:
+            if element == vertex:
+                continue
+            elif seen_element:
+                right_hand_list += [element]
+            else:
+                left_hand_list += [element]
+        self.solution[bus] = left_hand_list + right_hand_list
+
+    def swap(self, vertex_1, vertex_2, bus1, bus2, score):
         # Swaps the two vertices and returns a tuple with the new solution and a score
         # NOTE: The new solution is only swapped if the new score is better
         # Count the number of friends lost in each bus by the swap
+        # TODO: Finish implementing if calling score is too slow
+        """
         original_friends_vertex_1 = self.count_friends_in_bus(vertex_1, bus1) if vertex_1 is not None else 0
         original_friends_vertex_2 = self.count_friends_in_bus(vertex_2, bus2) if vertex_2 is not None else 0
         new_friends_vertex_1 = self.count_friends_in_bus(vertex_1, bus2) if vertex_1 is not None else 0
@@ -353,7 +417,30 @@ class BasicOptimizer(Optimizer):
                     new_friends_vertex_1 + new_friends_vertex_2)
 
         # Check differences caused by forming/breaking up rowdy groups
-        pass
+        original_rowdy_groups_vertex_1 = self.rowdy_groups_with_vertex(vertex_1, bus1) if vertex_1 is not None else 0
+        original_rowdy_groups_vertex_2 = self.rowdy_groups_with_vertex(vertex_2, bus2) if vertex_2 is not None else 0
+        new_rowdy_groups_vertex_1 = self.rowdy_groups_with_vertex(vertex_1, bus2) if vertex_1 is not None else 0
+        new_rowdy_groups_vertex_2 = self.rowdy_groups_with_vertex(vertex_2, bus1) if vertex_2 is not None else 0
+        """
+
+        # to hold the place of the old solution before swapping
+        holder_solution = copy.deepcopy(self.solution)
+
+        # Swap the vertices in the new solution
+        # First remove the vertices from their buses
+        self.remove_vertex(vertex_1, bus1)
+        self.remove_vertex(vertex_2, bus2)
+        # Add the vertices to the opposite bus
+        self.solution[bus1] += [vertex_2]
+        self.solution[bus2] += [vertex_1]
+        # Recompute the score
+        new_score = self.set_score()[0]
+        # return the new score if it is larger and update the solution
+        if new_score >= score:
+            return new_score # We have already updated the solution by removing the vertices
+        else:
+            self.solution = holder_solution
+            return score
 
     # Call this method to optimize the solution we are given for a specific score
     def optimize(self, max_iterations=1000):
@@ -390,7 +477,8 @@ class BasicOptimizer(Optimizer):
                     student_2 = None if choose_empty_seat else np.random.choice(self.solution[bus2])
 
                 # Swap these two students
-                self.swap(student_1, student_2, bus1, bus2)
+
+                score = self.swap(student_1, student_2, bus1, bus2, score)
 
 
 def parse_input(folder_name):
