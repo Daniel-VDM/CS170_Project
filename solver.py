@@ -132,6 +132,7 @@ class SolveHeuristic(Solver):
     pass
 
 
+# noinspection PyMissingConstructor
 class Optimizer(Solver):
 
     def __init__(self, graph, num_buses, bus_size, constraints, solution, method='basic'):
@@ -142,6 +143,7 @@ class Optimizer(Solver):
         self.optimizer.optimize()
 
 
+# noinspection PyMissingConstructor
 class BasicOptimizer(Optimizer):
 
     def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100):
@@ -293,7 +295,6 @@ def main():
 
         if not os.path.isdir(output_category_path):
             os.mkdir(output_category_path)
-        z = os.listdir(category_dir)
 
         for input_folder in os.listdir(category_dir):
             input_name = os.fsdecode(input_folder)
