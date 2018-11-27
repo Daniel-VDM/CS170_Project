@@ -416,7 +416,7 @@ class InputGenerator:
 
     def score_graph(self):
         """
-        Quick and dirty scorer for the graph.
+        Quick and dirty setScore for the graph.
         Note that there is a lot of file writing so that we could use
         the included output_scorer.
 
