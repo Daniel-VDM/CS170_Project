@@ -93,7 +93,7 @@ class Solver:
         # TODO: only write the file if the score of the new solution is better than the old one.
 
         if verbose:
-            print("[{}] Score for {}{}:  {}".format(datetime.datetime.utcnow(), directory, file_name, score))
+            print("[{}] Score for {}{}:  {}".format(str(datetime.datetime.utcnow())[11:], directory, file_name, score))
 
         with open("{}{}.out".format(directory, file_name), 'w', encoding='utf8') as f:
             for lst in self.solution:
@@ -231,6 +231,8 @@ class Heuristic(Solver):
         # Add vertices to buses using heuristic following the process_queue's order.
         while self.process_queue:
             target = self.process_queue.popleft()  # queue popping b/c we might use prio-queue
+            if target == "25":
+                x = 1
 
             dest_bus_candidates = [(-1, -1)]  # tuple format for each el: (heuristic_val, bus_number)
             for bus_num in range(self.num_buses):
@@ -274,19 +276,16 @@ class Heuristic(Solver):
 class DiracDeltaHeuristicBase(Heuristic):
     """ This is the basic Dirac Delta Heuristic solver.
     All other variations are based off of this.
-
-    TODO: verify the phi_constant (c) correctness.
-        Also, maybe change phi to just be some discrete integer return instead of the DiracDelta
     """
 
-    sig = 0.4  # phi peaks at ~1 when c = 1 with sig = 0.4
+    sig = 1e-6
 
     def __init__(self, graph, num_buses, bus_size, constraints):
         Heuristic.__init__(self, graph, num_buses, bus_size, constraints)
-        self.phi_constant = self.bus_size  # expects sig = 0.4 so function peaks at self.bus_size
+        self.phi_constant = 1   # TODO: play with this and see if it can help for bigger graphs.
 
     @staticmethod
-    def phi(x, rowdy_size, c=1):
+    def phi(x, rowdy_size, c=1.0):
         """
         Static Method for the Dirac Delta function (approximation).
             This is the nonlinear function: phi(.) in the design doc.
@@ -343,7 +342,7 @@ class DiracDeltaHeuristicBase(Heuristic):
         target_rowdy_groups = (self.constraints[i] for i in self.node_to_rowdy_index_dict[target])
         for grp in target_rowdy_groups:
             r = self.people_on_bus_count(bus_num, grp)
-            phi = DiracDeltaHeuristicBase.phi(r, len(grp) - 1, self.phi_constant)  # can be changed and experimented with.
+            phi = DiracDeltaHeuristicBase.phi(r, len(grp) - 1, self.phi_constant)
             max_val = max(max_val, phi)
         denominator = max_val + 1
         return numerator / denominator
@@ -575,8 +574,6 @@ def solve(graph, num_buses, bus_size, constraints):
     solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
     solver.solve()
     return solver
-
-    pass
 
 
 def main():
