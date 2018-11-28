@@ -94,7 +94,7 @@ class Solver:
         if verbose:
             print("Score for {}{}:  {}".format(directory, file_name, score))
 
-        with open("{}{}.out".format(directory, file_name), 'w') as f:
+        with open("{}{}.out".format(directory, file_name), 'w', encoding='utf8') as f:
             for lst in self.solution:
                 f.write(str(lst))
                 f.write("\n")
@@ -223,32 +223,36 @@ class Heuristic(Solver):
 
     def solve(self):
         """
-        The main heuristic solver method.
+        The main/default heuristic solver method.
         :return: self.solutions after a solution is found.
         """
         self.set_process_queue(kind='low_degree')
-
+        # Add vertices to buses using heuristic following the process_queue's order.
         while self.process_queue:
             target = self.process_queue.popleft()  # queue popping b/c we might use prio-queue
 
-            top_candidates = [(-1, '')]
+            dest_bus_candidates = [(-1, -1)]  # tuple format for each el: (heuristic_val, bus_number)
             for bus_num in range(self.num_buses):
                 heuristic = self.heuristic(bus_num, target)
-                if heuristic > top_candidates[0][0]:
-                    top_candidates = [(heuristic, bus_num)]
-                elif heuristic == top_candidates[0][0]:
-                    top_candidates.append((heuristic, bus_num))
+                if heuristic > dest_bus_candidates[0][0]:
+                    dest_bus_candidates = [(heuristic, bus_num)]
+                elif heuristic == dest_bus_candidates[0][0]:
+                    dest_bus_candidates.append((heuristic, bus_num))
 
-            dest_bus_index = 0 if len(top_candidates) == 1 else np.random.choice(len(top_candidates))
-            dest_bus = top_candidates[dest_bus_index][1]
+            # TODO: Think abt this randomness. I don't like it, its too inconsistent.
+            dest_bus_index = 0 if len(dest_bus_candidates) == 1 else np.random.choice(len(dest_bus_candidates))
+            dest_bus = dest_bus_candidates[dest_bus_index][1]
 
             self.solution[dest_bus].append(target)
             self.solution_set_rep[dest_bus].add(target)
 
         # Takes least significant vertices and fill out empty buses
         empty_bus_list = [i for i in range(len(self.solution)) if not self.solution[i]]
-        swapped_vertices = self.get_solution_vertices_by_score(len(empty_bus_list))
-        for to_bus_index, (v, from_bus_index) in zip(empty_bus_list, swapped_vertices):
+        swapped_vertices = iter(self.get_solution_vertices_by_score())
+        for to_bus_index in empty_bus_list:
+            v, from_bus_index = next(swapped_vertices)
+            while len(self.solution[from_bus_index]) == 1:
+                v, from_bus_index = next(swapped_vertices)
             self.solution[from_bus_index].remove(v)
             self.solution_set_rep[from_bus_index].remove(v)
             self.solution[to_bus_index].append(v)
@@ -263,10 +267,12 @@ class Heuristic(Solver):
 
         # TODO: local search (starting at preliminary solution from above) for a satisfying solution.
 
+        return self.solution
+
 
 class DiracDeltaHeuristic(Heuristic):
 
-    sig = 0.1
+    sig = 1e-5
 
     @staticmethod
     def phi(x, rowdy_size):
@@ -283,44 +289,21 @@ class DiracDeltaHeuristic(Heuristic):
         denominator = DiracDeltaHeuristic.sig * np.sqrt(2 * np.pi)
         return numerator/denominator
 
-    def friend_on_bus_count(self, bus_num, target):
+    def people_on_bus_count(self, bus_num, group):
         """
-        Counts the number of friends that TARGET currently has in bus number: BUS_NUM
-            this is function: f(.,.) in the design doc.
+        Counts the number of people of GROUP that are in bus number: BUS_NUM
         :param bus_num: (int) the bus number in self.solution
             this is b in the design doc.
-        :param target: (nx node) the node being processed.
-            this is i in the design doc.
-        :return: (int) number of friends of node: TARGET in bus number: BUS_NUM.
-        """
-        bus_set_rep = self.solution_set_rep[bus_num]
-        count = 0
-        for v in self.graph.neighbors(target):
-            if v in bus_set_rep:
-                count += 1
-        return count
-
-    def rowdy_on_bus_count(self, bus_num, target, rowdy_group):
-        """
-        Counts the number of people in bus number: BUS_NUM that are in ROWDY_GROUP
-            with TARGET. This is function: r(.,.,.) in the design doc.
-        :param bus_num: (int) the bus number in self.solution
-            this is b in the design doc.
-        :param target: (nx node) the node being processed.
-            this is i in the design doc.
-        :param rowdy_group: (list) the list of nodes that are in a rowdy group
-            this is g in the design doc.
+        :param group: (iterable) the group being counted
+            this is g or i's neighbors
         :return: (int) the count.
         """
-        if target not in rowdy_group:
-            raise ValueError("{} is not in {} when calculating heuristic".format(target, rowdy_group))
-
         bus_set_rep = self.solution_set_rep[bus_num]
         if bus_set_rep == set():
             return 0
 
         count = 0
-        for v in rowdy_group:
+        for v in group:
             if v in bus_set_rep:
                 count += 1
         return count
@@ -340,14 +323,14 @@ class DiracDeltaHeuristic(Heuristic):
             return -1
 
         # numerator calculation
-        numerator = self.friend_on_bus_count(bus_num, target) + 1
+        numerator = self.people_on_bus_count(bus_num, self.graph.neighbors(target)) + 1
 
         # denominator calculation
         max_val = 0
-        target_rowdy_groups = [self.constraints[i] for i in self.node_to_rowdy_index_dict[target]]
+        target_rowdy_groups = (self.constraints[i] for i in self.node_to_rowdy_index_dict[target])
         for grp in target_rowdy_groups:
-            r = self.rowdy_on_bus_count(bus_num, target, grp)
-            phi = DiracDeltaHeuristic.phi(r, len(grp))  # Phi can be changed and experimented with.
+            r = self.people_on_bus_count(bus_num, grp)
+            phi = DiracDeltaHeuristic.phi(r, len(grp)-1)  # can be changed and experimented with.
             max_val = max(max_val, phi)
         denominator = max_val + 1
         return numerator / denominator
@@ -602,11 +585,13 @@ def main():
         if not os.path.isdir(output_category_path):
             os.mkdir(output_category_path)
 
+        z = list(os.listdir(category_dir))
+
         for input_folder in os.listdir(category_dir):
             input_name = os.fsdecode(input_folder)
             graph, num_buses, bus_size, constraints = parse_input(category_path + "/" + input_name)
             solver_instance = solve(graph, num_buses, bus_size, constraints)
-            solver_instance.write(input_name, "{}/".format(category_path), True)
+            solver_instance.write(input_name, "{}/".format(output_category_path), True)
 
 
 if __name__ == '__main__':
