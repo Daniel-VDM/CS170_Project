@@ -24,12 +24,12 @@ path_to_outputs = "./outputs"
 
 class Solver:
 
-    def __init__(self, graph, num_buses, bus_size, constraints):
+    def __init__(self, graph, num_buses, bus_size, constraints, solution=None):
         self.graph = graph
         self.num_buses = num_buses
         self.bus_size = bus_size
         self.constraints = constraints
-        self.solution = []
+        self.solution = solution if solution else []
         self.score = -1
         self.node_to_rowdy_index_dict = {}
         for node in self.graph.nodes():
@@ -363,7 +363,7 @@ class Optimizer(Solver):
 class BasicOptimizer(Optimizer):
 
     def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100):
-        super(self).__init__(graph, num_buses, bus_size, constraints, solution)
+        Solver.__init__(self, graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
         # To keep track of the score as we make optimizer steps
         # Setup instance variables
@@ -572,7 +572,7 @@ def solve(graph, num_buses, bus_size, constraints):
     # TODO: Real solver logic.
     # Currently it is some temp test code.
     solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
-    solver.solve()
+    optimizer = Optimizer(graph, num_buses, bus_size, constraints, solver.solve())
     return solver
 
 
