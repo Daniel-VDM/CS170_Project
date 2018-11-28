@@ -363,7 +363,7 @@ class Optimizer(Solver):
 class BasicOptimizer(Optimizer):
 
     def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100):
-        super(self).__init__(graph, num_buses, bus_size, constraints, solution)
+        Solver.__init__(graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
         # To keep track of the score as we make optimizer steps
         # Setup instance variables
@@ -532,6 +532,9 @@ class BasicOptimizer(Optimizer):
 
                 score = self.swap(student_1, student_2, bus1, bus2, score)
 
+            if i % 100 == 0:
+                print(f"Score on iteration {i}: {score}")
+
 
 def parse_input(folder_name):
     """
@@ -573,7 +576,10 @@ def solve(graph, num_buses, bus_size, constraints):
     # Currently it is some temp test code.
     solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
     solver.solve()
-    return solver
+    print("GOT TO THIS POINT")
+    optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution)
+    optimizer.solve()
+    return optimizer
 
 
 def main():
@@ -584,6 +590,7 @@ def main():
         formatted correctly.
     """
     size_categories = ["small", "medium", "large"]
+    size_categories = ["small"]
     if not os.path.isdir(path_to_outputs):
         os.mkdir(path_to_outputs)
 
@@ -599,7 +606,7 @@ def main():
             input_name = os.fsdecode(input_folder)
             graph, num_buses, bus_size, constraints = parse_input(category_path + "/" + input_name)
             solver_instance = solve(graph, num_buses, bus_size, constraints)
-            solver_instance.write(input_name, "{}/".format(output_category_path), True)
+            solver_instance.write(input_name, "{}/".format(output_category_path), verbose=False)
 
 
 if __name__ == '__main__':
