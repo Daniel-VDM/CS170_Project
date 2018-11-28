@@ -1,8 +1,10 @@
 import networkx as nx
 import os
 import numpy as np
-from collections import deque
 import copy
+import matplotlib.pyplot as plt
+import bisect
+from collections import deque
 
 ###########################################
 # Change this variable to the path to 
@@ -28,12 +30,48 @@ class Solver:
         self.constraints = constraints
         self.solution = []
         self.score = -1
+        self.node_to_rowdy_index_dict = {}
+        for node in self.graph.nodes():
+            lst = []
+            for i in range(len(self.constraints)):
+                if node in self.constraints[i]:
+                    lst.append(i)
+            self.node_to_rowdy_index_dict[node] = lst[:]
 
-    def solve(self):
-        pass
+    def get_solution_vertices_by_score(self, limit=None):
+        """
+        :param limit: (int) only calculate the first LIMIT el of the returned list.
+            Defaults to all vertices in the solution.
+        :return: A continuous list of (vertex, solution_bus_num) tuples of self.solution,
+            ordered increasingly by their contribution to the score. So the first el
+            of the returned list contributes the least to the score and the last el
+            contributes the most.
+        """
+        limit = limit if limit else sum(len(l) for l in self.solution)
+        lst = []
+        for i in range(len(self.solution)):
+            bus_set = set(self.solution[i])
+            for u in self.solution[i]:
+                # Terminate early if possible
+                if len(lst) == limit:
+                    return [l[1] for l in lst]
 
-    def score(self):
-        pass
+                # Filter out vertices that form rowdy groups first
+                forms_rowdy = False
+                for rowdy_group_index in self.node_to_rowdy_index_dict[u]:
+                    if all(map(lambda v: v in bus_set, self.constraints[rowdy_group_index])):
+                        bisect.insort(lst, (-1, (u, i)))
+                        forms_rowdy = True
+                        break
+
+                # If vertex doesn't form a rowdy group, consider its score contribution
+                if not forms_rowdy:
+                    score_contribution = 0
+                    for neighbor in self.graph.neighbors(u):
+                        if neighbor in bus_set:
+                            score_contribution += 1
+                    bisect.insort(lst, (score_contribution, (u, i)))
+        return [l[1] for l in lst]
 
     def write(self, file_name, directory, verbose=False):
         """
@@ -129,6 +167,9 @@ class Solver:
     def draw(self):
         pass
 
+    def solve(self):
+        pass
+
 
 class Heuristic(Solver):
 
@@ -137,13 +178,6 @@ class Heuristic(Solver):
         self.solution = [[] for _ in range(self.num_buses)]
         self.solution_set_rep = np.array([set() for _ in range(self.num_buses)])
         self.process_queue = deque()
-        self.node_to_rowdy_index_dict = {}
-        for node in self.graph.nodes():
-            lst = []
-            for i in range(len(self.constraints)):
-                if node in self.constraints[i]:
-                    lst.append(i)
-            self.node_to_rowdy_index_dict[node] = lst[:]
 
     def set_process_queue(self, kind="LOW_DEGREE"):
         """
@@ -178,7 +212,7 @@ class Heuristic(Solver):
         """
         bus_set_rep = self.solution_set_rep[bus_num]
 
-        if len(bus_set_rep) + 1 > self.bus_size:
+        if len(bus_set_rep) == self.bus_size:
             return -1
 
         count = 0
@@ -194,21 +228,31 @@ class Heuristic(Solver):
         """
         self.set_process_queue(kind='low_degree')
 
-        # Create a preliminary solution that does not satisfy the following constraints:
-        #   - Non-empty buses
-        #   - Bus size
         while self.process_queue:
             target = self.process_queue.popleft()  # queue popping b/c we might use prio-queue
-            max_tup = (-1, -1)
-            for i in range(self.num_buses):
-                heuristic = self.heuristic(i, target)
-                if heuristic > max_tup[0]:
-                    max_tup = (heuristic, i)
-            self.solution[max_tup[1]].append(target)
-            self.solution_set_rep[max_tup[1]].add(target)
 
-        # NOTE: We might have to do some interesting things with the heuristic formatting to check
-        # and make sure that it is working correctly.
+            top_candidates = [(-1, '')]
+            for bus_num in range(self.num_buses):
+                heuristic = self.heuristic(bus_num, target)
+                if heuristic > top_candidates[0][0]:
+                    top_candidates = [(heuristic, bus_num)]
+                elif heuristic == top_candidates[0][0]:
+                    top_candidates.append((heuristic, bus_num))
+
+            dest_bus_index = 0 if len(top_candidates) == 1 else np.random.choice(len(top_candidates))
+            dest_bus = top_candidates[dest_bus_index][1]
+
+            self.solution[dest_bus].append(target)
+            self.solution_set_rep[dest_bus].add(target)
+
+        # Takes least significant vertices and fill out empty buses
+        empty_bus_list = [i for i in range(len(self.solution)) if not self.solution[i]]
+        swapped_vertices = self.get_solution_vertices_by_score(len(empty_bus_list))
+        for to_bus_index, (v, from_bus_index) in zip(empty_bus_list, swapped_vertices):
+            self.solution[from_bus_index].remove(v)
+            self.solution_set_rep[from_bus_index].remove(v)
+            self.solution[to_bus_index].append(v)
+            self.solution_set_rep[to_bus_index].add(v)
 
         # TODO: some sort of greedy correction possibly using the same heuristic...
         # So, Take lowest degree vertices of oversize buses and add them to non-full buses using heuristic.
@@ -222,9 +266,25 @@ class Heuristic(Solver):
 
 class DiracDeltaHeuristic(Heuristic):
 
-    def _friend_on_buss_count(self, bus_num, target):
+    sig = 0.1
+
+    @staticmethod
+    def phi(x, rowdy_size):
         """
-        Private Method
+        Static Method for the Dirac Delta function (approximation).
+            This is the nonlinear function: phi(.) in the design doc.
+        :param x: number of people on the bus that is in the given rowdy group.
+            this is the result of r(i,b,g) in the design doc.
+        :param rowdy_size: Number of people in the given rowdy group.
+            this is |g| in the design doc.
+        :return: (float)
+        """
+        numerator = np.exp(-((x - rowdy_size) ** 2) / (2 * DiracDeltaHeuristic.sig))
+        denominator = DiracDeltaHeuristic.sig * np.sqrt(2 * np.pi)
+        return numerator/denominator
+
+    def friend_on_bus_count(self, bus_num, target):
+        """
         Counts the number of friends that TARGET currently has in bus number: BUS_NUM
             this is function: f(.,.) in the design doc.
         :param bus_num: (int) the bus number in self.solution
@@ -240,9 +300,8 @@ class DiracDeltaHeuristic(Heuristic):
                 count += 1
         return count
 
-    def _rowdy_group_count(self, bus_num, target, rowdy_group):
+    def rowdy_on_bus_count(self, bus_num, target, rowdy_group):
         """
-        Private Method
         Counts the number of people in bus number: BUS_NUM that are in ROWDY_GROUP
             with TARGET. This is function: r(.,.,.) in the design doc.
         :param bus_num: (int) the bus number in self.solution
@@ -255,9 +314,9 @@ class DiracDeltaHeuristic(Heuristic):
         """
         if target not in rowdy_group:
             raise ValueError("{} is not in {} when calculating heuristic".format(target, rowdy_group))
-        bus_set_rep = self.solution_set_rep[bus_num]
 
-        if not bus_set_rep:
+        bus_set_rep = self.solution_set_rep[bus_num]
+        if bus_set_rep == set():
             return 0
 
         count = 0
@@ -266,41 +325,31 @@ class DiracDeltaHeuristic(Heuristic):
                 count += 1
         return count
 
-    def _dirac_delta(self, n, rowdy_size):
-        """
-        Private Method
-        This is the nonlinear function: phi(.) in the design doc.
-        :param n: number of people on the bus that is in the given rowdy group.
-            this is the result of r(i,b,g) in the design doc.
-        :param rowdy_size: Number of people in the given rowdy group.
-            this is |g| in the design doc.
-        :return: (int)
-        """
-        # TODO: the dirac_delta
-        # DO THIS FIRSTTTTTTTTTTTTTT
-        return 1
-
     def heuristic(self, bus_num, target):
         """
         The heuristic. (overrides inherited heuristic)
             This is H(.,.) in the design doc
+
+        NOTE: This heuristic returns -1 if bus number: BUS_NUM is full.
+
         :param target: current node being processed
         :param bus_num: the heuristic for the current buss being processed
         :return: (float) heuristic value
         """
-        # TODO: consider the size of the bus
+        if len(self.solution[bus_num]) == self.bus_size:
+            return -1
+
         # numerator calculation
-        numerator = self._friend_on_buss_count(bus_num, target) + 1
+        numerator = self.friend_on_bus_count(bus_num, target) + 1
 
         # denominator calculation
         max_val = 0
         target_rowdy_groups = [self.constraints[i] for i in self.node_to_rowdy_index_dict[target]]
         for grp in target_rowdy_groups:
-            r = self._rowdy_group_count(bus_num, target, grp)
-            phi = self._dirac_delta(r, len(grp))  # Phi can be changed and experimented with.
+            r = self.rowdy_on_bus_count(bus_num, target, grp)
+            phi = DiracDeltaHeuristic.phi(r, len(grp))  # Phi can be changed and experimented with.
             max_val = max(max_val, phi)
         denominator = max_val + 1
-
         return numerator / denominator
 
 
@@ -444,7 +493,7 @@ class BasicOptimizer(Optimizer):
         new_score = self.set_score()[0]
         # return the new score if it is larger and update the solution
         if new_score >= score:
-            return new_score # We have already updated the solution by removing the vertices
+            return new_score  # We have already updated the solution by removing the vertices
         else:
             self.solution = holder_solution
             return score
