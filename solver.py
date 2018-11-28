@@ -4,6 +4,7 @@ import numpy as np
 import copy
 import matplotlib.pyplot as plt
 import bisect
+import datetime
 from collections import deque
 
 ###########################################
@@ -92,7 +93,7 @@ class Solver:
         # TODO: only write the file if the score of the new solution is better than the old one.
 
         if verbose:
-            print("Score for {}{}:  {}".format(directory, file_name, score))
+            print("[{}] Score for {}{}:  {}".format(datetime.datetime.utcnow(), directory, file_name, score))
 
         with open("{}{}.out".format(directory, file_name), 'w', encoding='utf8') as f:
             for lst in self.solution:
