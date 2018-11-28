@@ -278,11 +278,11 @@ class DiracDeltaHeuristicBase(Heuristic):
     All other variations are based off of this.
     """
 
-    sig = 1e-6
+    sig = 0.1
 
     def __init__(self, graph, num_buses, bus_size, constraints):
         Heuristic.__init__(self, graph, num_buses, bus_size, constraints)
-        self.phi_constant = 1   # TODO: play with this and see if it can help for bigger graphs.
+        self.phi_constant = 1e6
 
     @staticmethod
     def phi(x, rowdy_size, c=1.0):
