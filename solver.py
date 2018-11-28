@@ -271,12 +271,21 @@ class Heuristic(Solver):
         return self.solution
 
 
-class DiracDeltaHeuristic(Heuristic):
+class DiracDeltaHeuristicBase(Heuristic):
+    """ This is the basic Dirac Delta Heuristic solver.
+    All other variations are based off of this.
 
-    sig = 1e-5
+    TODO: verify the phi_constant (c) correctness.
+    """
+
+    sig = 0.266  # phi peaks at ~1.5 when c = 1 with sig = 0.266
+
+    def __init__(self, graph, num_buses, bus_size, constraints):
+        Heuristic.__init__(self, graph, num_buses, bus_size, constraints)
+        self.phi_constant = self.bus_size / 1.5
 
     @staticmethod
-    def phi(x, rowdy_size):
+    def phi(x, rowdy_size, c=1):
         """
         Static Method for the Dirac Delta function (approximation).
             This is the nonlinear function: phi(.) in the design doc.
@@ -284,11 +293,13 @@ class DiracDeltaHeuristic(Heuristic):
             this is the result of r(i,b,g) in the design doc.
         :param rowdy_size: Number of people in the given rowdy group.
             this is |g| in the design doc.
+        :param c: multiple the result of the dirac delta by a constant to
+            'inflate' the peak. When C = 1, peak is at ~1.5 (really close).
         :return: (float)
         """
-        numerator = np.exp(-((x - rowdy_size) ** 2) / (2 * DiracDeltaHeuristic.sig))
-        denominator = DiracDeltaHeuristic.sig * np.sqrt(2 * np.pi)
-        return numerator/denominator
+        numerator = np.exp(-((x - rowdy_size) ** 2) / (2 * DiracDeltaHeuristicBase.sig))
+        denominator = DiracDeltaHeuristicBase.sig * np.sqrt(2 * np.pi)
+        return (numerator/denominator)*c
 
     def people_on_bus_count(self, bus_num, group):
         """
@@ -331,7 +342,7 @@ class DiracDeltaHeuristic(Heuristic):
         target_rowdy_groups = (self.constraints[i] for i in self.node_to_rowdy_index_dict[target])
         for grp in target_rowdy_groups:
             r = self.people_on_bus_count(bus_num, grp)
-            phi = DiracDeltaHeuristic.phi(r, len(grp)-1)  # can be changed and experimented with.
+            phi = DiracDeltaHeuristicBase.phi(r, len(grp) - 1, self.phi_constant)  # can be changed and experimented with.
             max_val = max(max_val, phi)
         denominator = max_val + 1
         return numerator / denominator
@@ -560,7 +571,7 @@ def solve(graph, num_buses, bus_size, constraints):
     """
     # TODO: Real solver logic.
     # Currently it is some temp test code.
-    solver = DiracDeltaHeuristic(graph, num_buses, bus_size, constraints)
+    solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
     solver.solve()
     return solver
 
