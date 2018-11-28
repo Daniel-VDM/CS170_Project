@@ -276,13 +276,14 @@ class DiracDeltaHeuristicBase(Heuristic):
     All other variations are based off of this.
 
     TODO: verify the phi_constant (c) correctness.
+        Also, maybe change phi to just be some discrete integer return instead of the DiracDelta
     """
 
-    sig = 0.266  # phi peaks at ~1.5 when c = 1 with sig = 0.266
+    sig = 0.4  # phi peaks at ~1 when c = 1 with sig = 0.4
 
     def __init__(self, graph, num_buses, bus_size, constraints):
         Heuristic.__init__(self, graph, num_buses, bus_size, constraints)
-        self.phi_constant = self.bus_size / 1.5
+        self.phi_constant = self.bus_size  # expects sig = 0.4 so function peaks at self.bus_size
 
     @staticmethod
     def phi(x, rowdy_size, c=1):
@@ -596,8 +597,6 @@ def main():
 
         if not os.path.isdir(output_category_path):
             os.mkdir(output_category_path)
-
-        z = list(os.listdir(category_dir))
 
         for input_folder in os.listdir(category_dir):
             input_name = os.fsdecode(input_folder)
