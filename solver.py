@@ -24,12 +24,12 @@ path_to_outputs = "./outputs"
 
 class Solver:
 
-    def __init__(self, graph, num_buses, bus_size, constraints):
+    def __init__(self, graph, num_buses, bus_size, constraints, solution=None):
         self.graph = graph
         self.num_buses = num_buses
         self.bus_size = bus_size
         self.constraints = constraints
-        self.solution = []
+        self.solution = solution if solution else []
         self.score = -1
         self.node_to_rowdy_index_dict = {}
         for node in self.graph.nodes():
@@ -352,6 +352,7 @@ class DiracDeltaHeuristicBase(Heuristic):
 class Optimizer(Solver):
 
     def __init__(self, graph, num_buses, bus_size, constraints, solution, method='basic'):
+        Solver.__init__(self, graph, num_buses, bus_size, constraints, solution=solution)
         if method == 'basic':
             self.optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solution)
 
@@ -360,10 +361,10 @@ class Optimizer(Solver):
 
 
 # noinspection PyMissingConstructor
-class BasicOptimizer(Optimizer):
+class BasicOptimizer(Solver):
 
     def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100):
-        Solver.__init__(graph, num_buses, bus_size, constraints, solution)
+        Solver.__init__(self, graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
         # To keep track of the score as we make optimizer steps
         # Setup instance variables
@@ -577,7 +578,7 @@ def solve(graph, num_buses, bus_size, constraints):
     solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
     solver.solve()
     print("GOT TO THIS POINT")
-    optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution)
+    optimizer = Optimizer(graph, num_buses, bus_size, constraints, solver.solution)
     optimizer.solve()
     return optimizer
 
