@@ -373,7 +373,7 @@ class DiracDeltaHeuristicBase(Heuristic):
 
     def __init__(self, graph, num_buses, bus_size, constraints):
         Heuristic.__init__(self, graph, num_buses, bus_size, constraints)
-        self.phi_constant = 1e6
+        self.phi_constant = 1e9
 
     @staticmethod
     def phi(x, rowdy_size, c=1.0):
@@ -509,8 +509,9 @@ class Optimizer(Solver):
 
     def sample_swap(self):
         # Pick two random buses and one random vertex from each bus to swap
+        bus_choice = set(range(self.num_buses))
         while True:
-            bus1, bus2 = np.random.choice(list(range(self.num_buses)), 2, replace=False)
+            bus1, bus2 = np.random.choice(bus_choice, 2, replace=False)
 
             # Make sure that we don't swap the last member out of a bus
             if len(self.solution[bus1]) > 1 and len(self.solution[bus2]) > 1:
@@ -759,15 +760,14 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
     solver.solve()
 
     if verbose:
-        sys.stdout.write("\r\tOptimizing using BasicOptimizer...")
+        sys.stdout.write("\r\tOptimizing...")
         sys.stdout.flush()
-    # optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
-    optimizer = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
+    optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
+    # optimizer = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
     optimizer.solve()
 
     return optimizer
     # return solver
-
 
 def main():
     """
