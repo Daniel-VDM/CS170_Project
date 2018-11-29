@@ -5,7 +5,10 @@ import copy
 import matplotlib.pyplot as plt
 import bisect
 import datetime
+import sys
+import json
 from collections import deque
+import time
 
 ###########################################
 # Change this variable to the path to 
@@ -20,6 +23,14 @@ path_to_inputs = "./all_inputs"
 # different folder
 ###########################################
 path_to_outputs = "./outputs"
+
+###########################################
+# Dictionary to track scores. Actually a
+# dictionary of the three sized dictionaries
+# which store each input_name to a score.
+###########################################
+score_path = f"{path_to_outputs}/scores.json"
+SCORES = {}
 
 
 class Solver:
@@ -74,38 +85,54 @@ class Solver:
                     bisect.insort(lst, (score_contribution, (u, i)))
         return [l[1] for l in lst]
 
-    def write(self, file_name, directory, verbose=False):
+    def write(self, file_name, file_directory, verbose=False):
         """
         Writes our planted solution's .out file as specified in the
         project spec. Returns true if successful. Only writes if the solution
         has a valid score.
 
         :param file_name: clean filename string with no file extension.
-        :param directory: directory string with slashes included.
+        :param file_directory: the directory for where the file will be written to.
         :param verbose: print message or not.
         :raises: ValueError if the score is not valid, with an accompanying message.
         """
-        score, msg = self.set_score()
-        if score < 0:
-            raise ValueError("Solution object for {}{} has a negative score. "
-                             "Scorer Message: {}".format(directory, file_name, msg))
+        global SCORES
 
-        # TODO: only write the file if the score of the new solution is better than the old one.
+        score, msg = self.official_scorer()
+        file_path = f"{file_directory}/{file_name}.out"
+        if score < 0:
+            raise ValueError("Solution object for {}/{} has a negative score. "
+                             "Scorer Message: {}".format(file_directory, file_name, msg))
+
+        # Only write solutions that have betters scores than previous solutions.
+        prev_score = SCORES.get(file_path, None)
+        if prev_score is None:
+            SCORES[file_path] = score
+        elif SCORES[file_path] >= score:
+            if verbose:
+                print("[{}] Score for {} was lower (or equal), did not write. (diff = {})".format(
+                    str(datetime.datetime.utcnow())[11:], file_path, SCORES[file_path] - score))
+            return
 
         if verbose:
-            print("[{}] Score for {}{}:  {}".format(str(datetime.datetime.utcnow())[11:], directory, file_name, score))
+            print("[{}] Score for {}:  {}".format(str(datetime.datetime.utcnow())[11:],
+                                                  file_path, score))
 
-        with open("{}{}.out".format(directory, file_name), 'w', encoding='utf8') as f:
+        with open(file_path, 'w', encoding='utf8') as f:
             for lst in self.solution:
                 f.write(str(lst))
                 f.write("\n")
 
-    def set_score(self):
+        with open(score_path, 'w') as f:
+            json.dump(SCORES, f)
+
+    def official_scorer(self):
         """
         Formulates and returns the score of the self.solution, where the score is a number
         between 0 and 1 which represents what fraction of friendships were broken.
 
-        Sets self.score
+        This is what is used to score our solutions by the staff.
+        Note that it is destructive to self.graph and copying isn't too efficient.
 
         :return: Tuple where el 0 is the score and el 1 is the accompanying msg string.
         """
@@ -136,7 +163,73 @@ class Solver:
             for student in assignments[i]:
                 # if a student appears more than once
                 if attendance[student]:
-                    print(assignments[i])
+                    return -1, "{0} appears more than once in the bus assignments".format(student)
+
+                attendance[student] = True
+                bus_assignments[student] = i
+
+        # make sure each student is accounted for
+        if not all(attendance.values()):
+            return -1, "Not all students have been assigned a bus"
+
+        total_edges = graph.number_of_edges()
+        # Remove nodes for rowdy groups which were not broken up
+        for i in range(len(constraints)):
+            buses = set()
+            for student in constraints[i]:
+                buses.add(bus_assignments[student])
+            if len(buses) <= 1:
+                for student in constraints[i]:
+                    if student in graph:
+                        graph.remove_node(student)
+
+        # score output
+        score = 0
+        for edge in graph.edges():
+            if bus_assignments[edge[0]] == bus_assignments[edge[1]]:
+                score += 1
+        self.score = score / total_edges
+        return self.score, "Valid score of: {}".format(self.score)
+
+    def set_score(self):
+        """
+
+        TODO: Efficient scorer
+
+        Formulates and returns the score of the self.solution, where the score is a number
+        between 0 and 1 which represents what fraction of friendships were broken.
+
+        Sets self.score
+
+        :return: Tuple where el 0 is the score and el 1 is the accompanying msg string.
+        """
+        graph = self.graph.copy()
+        num_buses = self.num_buses
+        bus_size = self.bus_size
+        constraints = self.constraints
+        assignments = self.solution
+
+        if len(assignments) != num_buses:
+            return -1, "Must assign students to exactly {} buses, found {} buses".format(num_buses, len(assignments))
+
+        # make sure no bus is empty or above capacity
+        for i in range(len(assignments)):
+            if len(assignments[i]) > bus_size:
+                return -1, "Bus {} is above capacity".format(i)
+            if len(assignments[i]) <= 0:
+                return -1, "Bus {} is empty".format(i)
+
+        bus_assignments = {}
+
+        # make sure each student is in exactly one bus
+        attendance = {student: False for student in graph.nodes()}
+        for i in range(len(assignments)):
+            if not all([student in graph for student in assignments[i]]):
+                return -1, "Bus {} references a non-existant student: {}".format(i, assignments[i])
+
+            for student in assignments[i]:
+                # if a student appears more than once
+                if attendance[student]:
                     return -1, "{0} appears more than once in the bus assignments".format(student)
 
                 attendance[student] = True
@@ -231,8 +324,6 @@ class Heuristic(Solver):
         # Add vertices to buses using heuristic following the process_queue's order.
         while self.process_queue:
             target = self.process_queue.popleft()  # queue popping b/c we might use prio-queue
-            if target == "25":
-                x = 1
 
             dest_bus_candidates = [(-1, -1)]  # tuple format for each el: (heuristic_val, bus_number)
             for bus_num in range(self.num_buses):
@@ -299,7 +390,7 @@ class DiracDeltaHeuristicBase(Heuristic):
         """
         numerator = np.exp(-((x - rowdy_size) ** 2) / (2 * DiracDeltaHeuristicBase.sig))
         denominator = DiracDeltaHeuristicBase.sig * np.sqrt(2 * np.pi)
-        return (numerator/denominator)*c
+        return (numerator / denominator) * c
 
     def people_on_bus_count(self, bus_num, group):
         """
@@ -526,6 +617,7 @@ class BasicOptimizer(Optimizer):
         last_iter_score = score
         # If we don't have two buses no swapping will occur
         if self.num_buses < 2:
+            print("")
             return self.solution
         # Each iteration we will discover one swap to make
         for i in range(max_iterations):
@@ -538,16 +630,23 @@ class BasicOptimizer(Optimizer):
                 # Swap these two students
                 score = self.swap(student_1, student_2, bus1, bus2, score)
 
-            if i % 100 == 0 and self.verbose:
-                print(f"Score on iteration {i}: {score}")
+            if self.verbose:
+                sys.stdout.write(f"\rScore on iteration {i}: {score}")
+                sys.stdout.flush()
             if score == last_iter_score:
+                if self.verbose:
+                    sys.stdout.write(f"\rStopped BasicOptimizer on iteration "
+                                     f"{i}, with score: {score}")
+                    sys.stdout.flush()
                 break
+        print("")
 
 
 # A fancier optimizer that will look more than one step ahead
 class TreeSearchOptimizer(Optimizer):
 
-    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, max_rollout=5, verbose=False):
+    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, max_rollout=5,
+                 verbose=False):
         Solver.__init__(self, graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
         self.max_rollout = max_rollout
@@ -597,10 +696,16 @@ class TreeSearchOptimizer(Optimizer):
                 # For every time we expand with the rollout policy we call the method rollout to sample
                 score = self.rollout(score)
 
-            if iteration % 100 == 0 and self.verbose:
-                print(f"Score on iteration {iteration}: {score}")
+            if self.verbose:
+                sys.stdout.write(f"\rScore on iteration {iteration}: {score}")
+                sys.stdout.flush()
             if score == last_iter_score:
+                if self.verbose:
+                    sys.stdout.write(f"\rStopped TreeSearchOptimizer on iteration "
+                                     f"{iteration}, with score: {score}")
+                    sys.stdout.flush()
                 break
+        print("")
 
 
 def parse_input(folder_name):
@@ -631,7 +736,7 @@ def parse_input(folder_name):
     return graph, num_buses, bus_size, constraints
 
 
-def solve(graph, num_buses, bus_size, constraints):
+def solve(graph, num_buses, bus_size, constraints, verbose=False):
     """
     Params are obvious, they are from the skeleton code.
     :return: The solver instance.
@@ -639,12 +744,18 @@ def solve(graph, num_buses, bus_size, constraints):
     Note: we might have this function branch off (by calling other functions)
     depending on some future solvers that we implement.
     """
-    # TODO: Real solver logic.
-    # Currently it is some temp test code.
+    if verbose:
+        sys.stdout.write("\rSolving using DiracDeltaHeuristicBase...")
+        sys.stdout.flush()
     solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
     solver.solve()
-    optimizer = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=True)
+
+    if verbose:
+        sys.stdout.write("\rOptimizing using BasicOptimizer...")
+        sys.stdout.flush()
+    optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
     optimizer.solve()
+
     return optimizer
 
 
@@ -655,10 +766,17 @@ def main():
         the portion which writes it to a file to make sure their output is
         formatted correctly.
     """
+    global SCORES
+
     size_categories = ["small", "medium", "large"]
-    size_categories = ["small"]
     if not os.path.isdir(path_to_outputs):
         os.mkdir(path_to_outputs)
+
+    # Load previous scores from file if such file exists.
+    if os.path.isfile(score_path):
+        print("!!~~ LOADED PREVIOUS SCORES ~~!!")
+        with open(score_path, 'r+') as f:
+            SCORES = json.loads(f.read())
 
     for size in size_categories:
         category_path = path_to_inputs + "/" + size
@@ -671,8 +789,8 @@ def main():
         for input_folder in os.listdir(category_dir):
             input_name = os.fsdecode(input_folder)
             graph, num_buses, bus_size, constraints = parse_input(category_path + "/" + input_name)
-            solver_instance = solve(graph, num_buses, bus_size, constraints)
-            solver_instance.write(input_name, "{}/".format(output_category_path), verbose=False)
+            solver_instance = solve(graph, num_buses, bus_size, constraints, False)
+            solver_instance.write(input_name, output_category_path, verbose=True)
 
 
 if __name__ == '__main__':
