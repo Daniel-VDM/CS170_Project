@@ -32,12 +32,12 @@ SCORES = {}
 
 class Solver:
 
-    def __init__(self, graph, num_buses, bus_size, constraints):
+    def __init__(self, graph, num_buses, bus_size, constraints, solution=None):
         self.graph = graph
         self.num_buses = num_buses
         self.bus_size = bus_size
         self.constraints = constraints
-        self.solution = []
+        self.solution = solution if solution else []
         self.score = -1
         self.node_to_rowdy_index_dict = {}
         for node in self.graph.nodes():
@@ -315,7 +315,7 @@ class DiracDeltaHeuristicBase(Heuristic):
         """
         numerator = np.exp(-((x - rowdy_size) ** 2) / (2 * DiracDeltaHeuristicBase.sig))
         denominator = DiracDeltaHeuristicBase.sig * np.sqrt(2 * np.pi)
-        return (numerator / denominator) * c
+        return (numerator/denominator)*c
 
     def people_on_bus_count(self, bus_num, group):
         """
@@ -367,20 +367,101 @@ class DiracDeltaHeuristicBase(Heuristic):
 # noinspection PyMissingConstructor
 class Optimizer(Solver):
 
-    def __init__(self, graph, num_buses, bus_size, constraints, solution, method='basic'):
-        if method == 'basic':
-            self.optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solution)
+    def __init__(self, graph, num_buses, bus_size, constraints, solution):
+        Solver.__init__(self, graph, num_buses, bus_size, constraints, solution=solution)
 
     def solve(self):
-        self.optimizer.optimize()
+        self.optimize()
+
+    def remove_vertex(self, vertex, bus):
+        # get the bus
+        temp_list = self.solution[bus]
+        left_hand_list = []
+        right_hand_list = []
+        seen_element = False
+        for element in temp_list:
+            if element == vertex:
+                continue
+            elif seen_element:
+                right_hand_list += [element]
+            else:
+                left_hand_list += [element]
+        self.solution[bus] = left_hand_list + right_hand_list
+
+    def swap(self, vertex_1, vertex_2, bus1, bus2, score):
+        # Swaps the two vertices and returns a tuple with the new solution and a score
+        # NOTE: The new solution is only swapped if the new score is better
+        # Count the number of friends lost in each bus by the swap
+        # TODO: Finish implementing if calling score is too slow
+        """
+        original_friends_vertex_1 = self.count_friends_in_bus(vertex_1, bus1) if vertex_1 is not None else 0
+        original_friends_vertex_2 = self.count_friends_in_bus(vertex_2, bus2) if vertex_2 is not None else 0
+        new_friends_vertex_1 = self.count_friends_in_bus(vertex_1, bus2) if vertex_1 is not None else 0
+        new_friends_vertex_2 = self.count_friends_in_bus(vertex_2, bus2) if vertex_2 is not None else 0
+
+        new_score = self.curr_score - (original_friends_vertex_1 + original_friends_vertex_2) + (
+                    new_friends_vertex_1 + new_friends_vertex_2)
+
+        # Check differences caused by forming/breaking up rowdy groups
+        original_rowdy_groups_vertex_1 = self.rowdy_groups_with_vertex(vertex_1, bus1) if vertex_1 is not None else 0
+        original_rowdy_groups_vertex_2 = self.rowdy_groups_with_vertex(vertex_2, bus2) if vertex_2 is not None else 0
+        new_rowdy_groups_vertex_1 = self.rowdy_groups_with_vertex(vertex_1, bus2) if vertex_1 is not None else 0
+        new_rowdy_groups_vertex_2 = self.rowdy_groups_with_vertex(vertex_2, bus1) if vertex_2 is not None else 0
+        """
+
+        # to hold the place of the old solution before swapping
+        holder_solution = copy.deepcopy(self.solution)
+
+        # Swap the vertices in the new solution
+        # First remove the vertices from their buses
+        self.remove_vertex(vertex_1, bus1)
+        self.remove_vertex(vertex_2, bus2)
+        # Add the vertices to the opposite bus
+        if vertex_2 is not None:
+            self.solution[bus1] += [vertex_2]
+        if vertex_1 is not None:
+            self.solution[bus2] += [vertex_1]
+        # Recompute the score
+        new_score = self.set_score()[0]
+        # return the new score if it is larger and update the solution
+        if new_score >= score:
+            return new_score  # We have already updated the solution by removing the vertices
+        else:
+            self.solution = holder_solution
+            return score
+
+    def sample_swap(self):
+        # Pick two random buses and one random vertex from each bus to swap
+        bus1, bus2 = np.random.choice(list(range(self.num_buses)), 2, replace=False)
+        # Sample a vertex from each bus
+        open_seats1 = self.bus_size - len(self.solution[bus1])
+        # Determine if we select an empty seat or not
+        choose_empty_seat = np.random.binomial(1, open_seats1 / self.bus_size)
+
+        # Choose the first student, possibly an empty seat that we swap the second student to
+        if choose_empty_seat:
+            student_1 = None
+        else:
+            student_1 = np.random.choice(self.solution[bus1])
+
+        # Choose a second student with the requirement that we not try to swap two empty seats
+        if student_1 is None:
+            # student_2 cannot be none
+            student_2 = np.random.choice(self.solution[bus2])
+        else:
+            open_seats2 = self.bus_size - len(self.solution[bus2])
+            choose_empty_seat = np.random.binomial(1, open_seats2 / self.bus_size)
+
+            student_2 = None if choose_empty_seat else np.random.choice(self.solution[bus2])
+
+        return student_1, student_2, bus1, bus2
 
 
-# noinspection PyMissingConstructor
 class BasicOptimizer(Optimizer):
-
-    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100):
-        super(self).__init__(graph, num_buses, bus_size, constraints, solution)
+    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, verbose=False):
+        Optimizer.__init__(self, graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
+        self.verbose = verbose
         # To keep track of the score as we make optimizer steps
         # Setup instance variables
         # self.bus_mapping = None
@@ -423,7 +504,7 @@ class BasicOptimizer(Optimizer):
 
         # Set the truth array to be an instance variable
         self.is_invalid = truth_dict
-
+        
         self.curr_score = self.set_score()
 
     def count_friends_in_bus(self, vertex, bus):
@@ -454,100 +535,88 @@ class BasicOptimizer(Optimizer):
         return [self.constraints[i] for i in range(len(self.constraints)) if truth_list[i]]
         """
 
-    def remove_vertex(self, vertex, bus):
-        # get the bus
-        temp_list = self.solution[bus]
-        left_hand_list = []
-        right_hand_list = []
-        seen_element = False
-
-        for element in temp_list:
-            if element == vertex:
-                continue
-            elif seen_element:
-                right_hand_list += [element]
-            else:
-                left_hand_list += [element]
-        self.solution[bus] = left_hand_list + right_hand_list
-
-    def swap(self, vertex_1, vertex_2, bus1, bus2, score):
-        # Swaps the two vertices and returns a tuple with the new solution and a score
-        # NOTE: The new solution is only swapped if the new score is better
-        # Count the number of friends lost in each bus by the swap
-        # TODO: Finish implementing if calling score is too slow
-        """
-        original_friends_vertex_1 = self.count_friends_in_bus(vertex_1, bus1) if vertex_1 is not None else 0
-        original_friends_vertex_2 = self.count_friends_in_bus(vertex_2, bus2) if vertex_2 is not None else 0
-        new_friends_vertex_1 = self.count_friends_in_bus(vertex_1, bus2) if vertex_1 is not None else 0
-        new_friends_vertex_2 = self.count_friends_in_bus(vertex_2, bus2) if vertex_2 is not None else 0
-
-        new_score = self.curr_score - (original_friends_vertex_1 + original_friends_vertex_2) + (
-                    new_friends_vertex_1 + new_friends_vertex_2)
-
-        # Check differences caused by forming/breaking up rowdy groups
-        original_rowdy_groups_vertex_1 = self.rowdy_groups_with_vertex(vertex_1, bus1) if vertex_1 is not None else 0
-        original_rowdy_groups_vertex_2 = self.rowdy_groups_with_vertex(vertex_2, bus2) if vertex_2 is not None else 0
-        new_rowdy_groups_vertex_1 = self.rowdy_groups_with_vertex(vertex_1, bus2) if vertex_1 is not None else 0
-        new_rowdy_groups_vertex_2 = self.rowdy_groups_with_vertex(vertex_2, bus1) if vertex_2 is not None else 0
-        """
-
-        # to hold the place of the old solution before swapping
-        holder_solution = copy.deepcopy(self.solution)
-
-        # Swap the vertices in the new solution
-        # First remove the vertices from their buses
-        self.remove_vertex(vertex_1, bus1)
-        self.remove_vertex(vertex_2, bus2)
-        # Add the vertices to the opposite bus
-        self.solution[bus1] += [vertex_2]
-        self.solution[bus2] += [vertex_1]
-        # Recompute the score
-        new_score = self.set_score()[0]
-        # return the new score if it is larger and update the solution
-        if new_score >= score:
-            return new_score  # We have already updated the solution by removing the vertices
-        else:
-            self.solution = holder_solution
-            return score
-
     # Call this method to optimize the solution we are given for a specific score
     def optimize(self, max_iterations=1000):
         # Initialize the score
         score = self.set_score()[0]
+        last_iter_score = score
         # If we don't have two buses no swapping will occur
         if self.num_buses < 2:
             return self.solution
         # Each iteration we will discover one swap to make
         for i in range(max_iterations):
+            last_iter_score = score
             # If we have monte_carlo set to true we will sample the optimization space
             for sample in range(self.sample_size):
                 # Sample a number of vertex combinations to try swapping
-                # Pick two random buses and one random vertex from each bus to swap
-                bus1, bus2 = np.random.choice(list(range(self.num_buses)), 2, replace=False)
-                # Sample a vertex from each bus
-                open_seats1 = self.bus_size - len(self.solution[bus1])
-                # Determine if we select an empty seat or not
-                choose_empty_seat = np.random.binomial(1, open_seats1 / self.bus_size)
-
-                # Choose the first student, possibly an empty seat that we swap the second student to
-                if choose_empty_seat:
-                    student_1 = None
-                else:
-                    student_1 = np.random.choice(self.solution)
-
-                # Choose a second student with the requirement that we not try to swap two empty seats
-                if student_1 is None:
-                    # student_2 cannot be none
-                    student_2 = np.random.choice(self.solution[bus2])
-                else:
-                    open_seats2 = self.bus_size - len(self.solution[bus2])
-                    choose_empty_seat = np.random.binomial(1, open_seats2 / self.bus_size)
-
-                    student_2 = None if choose_empty_seat else np.random.choice(self.solution[bus2])
+                student_1, student_2, bus1, bus2 = self.sample_swap()
 
                 # Swap these two students
-
                 score = self.swap(student_1, student_2, bus1, bus2, score)
+
+            if i % 100 == 0 and self.verbose:
+                print(f"Score on iteration {i}: {score}")
+            if score == last_iter_score:
+                break
+
+
+# A fancier optimizer that will look more than one step ahead
+class TreeSearchOptimizer(Optimizer):
+
+    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, max_rollout=5, verbose=False):
+        Solver.__init__(self, graph, num_buses, bus_size, constraints, solution)
+        self.sample_size = sample_size
+        self.max_rollout = max_rollout
+        self.verbose = verbose
+
+    # Override swap because we don't want to copy or cancel out inferior solutions until rollout is complete
+    def swap(self, vertex_1, vertex_2, bus1, bus2):
+        # to hold the place of the old solution before swapping
+        # Swap the vertices in the new solution
+        # First remove the vertices from their buses
+        self.remove_vertex(vertex_1, bus1)
+        self.remove_vertex(vertex_2, bus2)
+        # Add the vertices to the opposite bus
+        if vertex_2 is not None:
+            self.solution[bus1] += [vertex_2]
+        if vertex_1 is not None:
+            self.solution[bus2] += [vertex_1]
+
+    def rollout(self, init_score):
+
+        solution_holder = copy.deepcopy(self.solution)
+
+        for step in range(self.max_rollout):
+            # At each step we sample a swap
+            # First sample two busses
+            student_1, student_2, bus1, bus2 = self.sample_swap()
+
+            # swap these students and get a new temporary solution
+            self.swap(student_1, student_2, bus1, bus2)
+
+        # Score this rollout
+        new_score = self.set_score()[0]
+
+        if new_score >= init_score:
+            return new_score
+        else:
+            self.solution = solution_holder
+            return init_score
+
+    def optimize(self, max_iterations=1000):
+        score = self.set_score()[0]
+
+        # Optimize the solution
+        for iteration in range(max_iterations):
+            last_iter_score = score
+            for sample in range(self.sample_size):
+                # For every time we expand with the rollout policy we call the method rollout to sample
+                score = self.rollout(score)
+
+            if iteration % 100 == 0 and self.verbose:
+                print(f"Score on iteration {iteration}: {score}")
+            if score == last_iter_score:
+                break
 
 
 def parse_input(folder_name):
@@ -617,7 +686,9 @@ def solve(graph, num_buses, bus_size, constraints):
     # Currently it is some temp test code.
     solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
     solver.solve()
-    return solver
+    optimizer = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=True)
+    optimizer.solve()
+    return optimizer
 
 
 def main():
@@ -628,6 +699,7 @@ def main():
         formatted correctly.
     """
     size_categories = ["small", "medium", "large"]
+    size_categories = ["small"]
     if not os.path.isdir(path_to_outputs):
         os.mkdir(path_to_outputs)
 
@@ -650,7 +722,7 @@ def main():
             input_name = os.fsdecode(input_folder)
             graph, num_buses, bus_size, constraints = parse_input(category_path + "/" + input_name)
             solver_instance = solve(graph, num_buses, bus_size, constraints)
-            solver_instance.write(input_name, size, True)
+            solver_instance.write(input_name, size, verbose=False)
 
 
 if __name__ == '__main__':
