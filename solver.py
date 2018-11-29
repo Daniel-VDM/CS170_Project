@@ -373,7 +373,7 @@ class DiracDeltaHeuristicBase(Heuristic):
 
     def __init__(self, graph, num_buses, bus_size, constraints):
         Heuristic.__init__(self, graph, num_buses, bus_size, constraints)
-        self.phi_constant = 1e9
+        self.phi_constant = 1e6
 
     @staticmethod
     def phi(x, rowdy_size, c=1.0):
@@ -509,13 +509,13 @@ class Optimizer(Solver):
 
     def sample_swap(self):
         # Pick two random buses and one random vertex from each bus to swap
-        bus_choice = set(range(self.num_buses))
-        while True:
-            bus1, bus2 = np.random.choice(bus_choice, 2, replace=False)
+        counter = 0
 
-            # Make sure that we don't swap the last member out of a bus
-            if len(self.solution[bus1]) > 1 and len(self.solution[bus2]) > 1:
-                break
+        viable_buses = [i for i in range(self.num_buses) if len(self.solution[i]) > 1]
+        if len(viable_buses) < 2:
+            return None, None, None, None
+
+        bus1, bus2 = np.random.choice(viable_buses, 2, replace=False)
 
         # Sample a vertex from each bus
         open_seats1 = self.bus_size - len(self.solution[bus1])
@@ -626,9 +626,6 @@ class BasicOptimizer(Optimizer):
         last_iter_score = score
         # If we don't have two buses no swapping will occur
         if self.num_buses < 2:
-            sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration 0.")
-            sys.stdout.flush()
-            print("")
             return self.solution
         # Each iteration we will discover one swap to make
         for i in range(max_iterations):
@@ -638,6 +635,10 @@ class BasicOptimizer(Optimizer):
                 # Sample a number of vertex combinations to try swapping
                 student_1, student_2, bus1, bus2 = self.sample_swap()
 
+                if student_1 is None and student_2 is None and bus1 is None and bus2 is None:
+                    if self.verbose:
+                        print("NO SWAP")
+                    break
                 # Swap these two students
                 score = self.swap(student_1, student_2, bus1, bus2, score)
 
@@ -646,7 +647,7 @@ class BasicOptimizer(Optimizer):
                 sys.stdout.flush()
             if score == last_iter_score:
                 if self.verbose:
-                    sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i}.")
+                    sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i} with score: {score}.")
                     sys.stdout.flush()
                 break
         print("")
@@ -656,7 +657,7 @@ class BasicOptimizer(Optimizer):
 # A fancier optimizer that will look more than one step ahead
 class TreeSearchOptimizer(Optimizer):
 
-    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=500, max_rollout=20, verbose=False):
+    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, max_rollout=5, verbose=False):
         Solver.__init__(self, graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
         self.max_rollout = max_rollout
@@ -684,6 +685,10 @@ class TreeSearchOptimizer(Optimizer):
             # First sample two busses
             student_1, student_2, bus1, bus2 = self.sample_swap()
 
+            if student_1 is None and student_2 is None and bus1 is None and bus2 is None:
+                if self.verbose:
+                    print("NO SWAP")
+                break
             # swap these students and get a new temporary solution
             self.swap(student_1, student_2, bus1, bus2)
 
@@ -711,7 +716,7 @@ class TreeSearchOptimizer(Optimizer):
                 sys.stdout.flush()
             if score == last_iter_score:
                 if self.verbose:
-                    sys.stdout.write(f"\r\tStopped TreeSearchOptimizer on iteration {iteration}")
+                    sys.stdout.write(f"\r\tStopped TreeSearchOptimizer on iteration {iteration} with score: {score}")
                     sys.stdout.flush()
                 break
         print("")
@@ -768,6 +773,7 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
 
     return optimizer
     # return solver
+
 
 def main():
     """

@@ -4,3 +4,4 @@ __pycache__/*
 *.iml
 *.DS_Store
 *.out
+*.json
