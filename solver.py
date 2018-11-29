@@ -446,9 +446,16 @@ class Optimizer(Solver):
         Solver.__init__(self, graph, num_buses, bus_size, constraints, solution=solution)
 
     def solve(self):
+        if not hasattr(self, "verbose") or not hasattr(self, 'optimize'):
+            raise AttributeError(f"{self} obj doesn't have necessary instance attributes.")
         if self.num_buses == 1:
+            if self.verbose:
+                sys.stdout.write(f"\r\tDid NOT optimize")
+                sys.stdout.flush()
+                print("")
             return
         self.optimize()
+        return self.solution
 
     def remove_vertex(self, vertex, bus):
         # get the bus
@@ -626,7 +633,10 @@ class BasicOptimizer(Optimizer):
         last_iter_score = score
         # If we don't have two buses no swapping will occur
         if self.num_buses < 2:
-            return self.solution
+            sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i}")
+            sys.stdout.flush()
+            print("")
+            return
         # Each iteration we will discover one swap to make
         for i in range(max_iterations):
             last_iter_score = score
@@ -634,10 +644,7 @@ class BasicOptimizer(Optimizer):
             for sample in range(self.sample_size):
                 # Sample a number of vertex combinations to try swapping
                 student_1, student_2, bus1, bus2 = self.sample_swap()
-
                 if student_1 is None and student_2 is None and bus1 is None and bus2 is None:
-                    if self.verbose:
-                        print("NO SWAP")
                     break
                 # Swap these two students
                 score = self.swap(student_1, student_2, bus1, bus2, score)
@@ -647,11 +654,10 @@ class BasicOptimizer(Optimizer):
                 sys.stdout.flush()
             if score == last_iter_score:
                 if self.verbose:
-                    sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i} with score: {score}.")
+                    sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i}")
                     sys.stdout.flush()
                 break
         print("")
-        return self.solution
 
 
 # A fancier optimizer that will look more than one step ahead
@@ -686,8 +692,6 @@ class TreeSearchOptimizer(Optimizer):
             student_1, student_2, bus1, bus2 = self.sample_swap()
 
             if student_1 is None and student_2 is None and bus1 is None and bus2 is None:
-                if self.verbose:
-                    print("NO SWAP")
                 break
             # swap these students and get a new temporary solution
             self.swap(student_1, student_2, bus1, bus2)
@@ -716,7 +720,7 @@ class TreeSearchOptimizer(Optimizer):
                 sys.stdout.flush()
             if score == last_iter_score:
                 if self.verbose:
-                    sys.stdout.write(f"\r\tStopped TreeSearchOptimizer on iteration {iteration} with score: {score}")
+                    sys.stdout.write(f"\r\tStopped TreeSearchOptimizer on iteration {iteration}")
                     sys.stdout.flush()
                 break
         print("")
