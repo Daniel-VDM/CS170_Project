@@ -758,15 +758,15 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
     solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
     solver.solve()
 
-    # if verbose:
-    #     sys.stdout.write("\r\tOptimizing using BasicOptimizer...")
-    #     sys.stdout.flush()
-    # # optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
-    # optimizer = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
-    # optimizer.solve()
+    if verbose:
+        sys.stdout.write("\r\tOptimizing using BasicOptimizer...")
+        sys.stdout.flush()
+    # optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
+    optimizer = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
+    optimizer.solve()
 
-    print("")
-    return solver
+    return optimizer
+    # return solver
 
 
 def main():
