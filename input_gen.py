@@ -16,7 +16,8 @@ class InputGenerator:
         """
         Params are passed in from the options parser in main.
         """
-        self.kids_count = kids_count
+        self.super_friend_count = bus_count
+        self.kids_count = kids_count  # - self.super_friend_count - 1  # -1 for the Loner.
         self.bus_count = bus_count
         self.constraint_limit = constraint_size
         self.bus_size = kids_count  # TBD, this should change during file generation.
@@ -358,6 +359,53 @@ class InputGenerator:
             self.decoy = vertices
         except:  # Don't hate me.
             self.generate_decoy()
+    def generate_loner(self):
+        """
+        Trouble makes who create rowdy groups with all of their friends.
+        All of their friends = all vertices in super set + some random people.
+        """
+        for _ in range(count):
+            while True:
+                pull_from = random.choice(self.solution)
+                if len(pull_from) > 1:
+                    break
+
+            self.G.add_node()
+            self.solution.append([vertex])
+            self.bus_count += 1
+            self.trouble_makers.append(vertex)
+
+    def generate_trouble_makers(self, count):
+        """
+        Trouble makes who create rowdy groups with all of their friends.
+        All of their friends = all vertices in super set + some random people.
+        """
+        for _ in range(count):
+            while True:
+                pull_from = random.choice(self.solution)
+                if len(pull_from) > 1:
+                    break
+            vertex = random.choice(list(set(pull_from) - self.super_set))
+
+            # Create solo bus
+            pull_from.remove(vertex)
+            self.G.remove_node(vertex)
+            self.G.add_node(vertex)
+            self.solution.append([vertex])
+            self.bus_count += 1
+            self.trouble_makers.append(vertex)
+
+            # Make vertex a trouble maker with super set vertices
+            for u in self.super_set:
+                self.G.add_edge(u, vertex)
+                self.rowdy_groups.append([u, vertex])
+
+            # Make it a trouble maker with high degree vertices
+            lst = sorted(self.G.degree(list(set(self.G.nodes) - self.super_set)),
+                         key=lambda x: x[1], reverse=True)
+            for u in lst[:random.randint(0, self.bus_count // 2)]:
+                self.G.add_edge(u[0], vertex)
+                self.rowdy_groups.append([u[0], vertex])
 
     def set_bus_size(self):
         """
@@ -486,6 +534,12 @@ def main():
     print("Super Set: {}".format(gen.super_set))
     print("Trouble Makers: {}".format(gen.trouble_makers))
     print("Decoy: {}".format(gen.decoy))
+
+    # Willow's Tooling
+    print("Constraints Remaining: {}".format(gen.constraint_limit - len(gen.rowdy_groups)))
+    print("Number of Students: {}".format(gen.kids_count))
+
+
     if options.graph:
         gen.draw_graph()
 

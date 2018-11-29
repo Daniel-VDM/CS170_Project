@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import bisect
 import datetime
 import sys
+import json
 from collections import deque
 import time
 
@@ -22,6 +23,13 @@ path_to_inputs = "./all_inputs"
 # different folder
 ###########################################
 path_to_outputs = "./outputs"
+
+###########################################
+# Dictionary to track scores. Actually a
+# dictionary of the three sized dictionaries
+# which store each input_name to a score.
+###########################################
+SCORES = {}
 
 
 class Solver:
@@ -76,28 +84,36 @@ class Solver:
                     bisect.insort(lst, (score_contribution, (u, i)))
         return [l[1] for l in lst]
 
-    def write(self, file_name, directory, verbose=False):
+    def write(self, file_name, size, verbose=False):
         """
         Writes our planted solution's .out file as specified in the
         project spec. Returns true if successful. Only writes if the solution
         has a valid score.
 
         :param file_name: clean filename string with no file extension.
-        :param directory: directory string with slashes included.
+        :param size: size category of theinput file.
         :param verbose: print message or not.
         :raises: ValueError if the score is not valid, with an accompanying message.
         """
+        global SCORES
+        output_category_path = path_to_outputs + "/" + size
         score, msg = self.official_scorer()
         if score < 0:
-            raise ValueError("Solution object for {}{} has a negative score. "
-                             "Scorer Message: {}".format(directory, file_name, msg))
+            raise ValueError("Solution object for {}/{} has a negative score. "
+                             "Scorer Message: {}".format(output_category_path, file_name, msg))
 
         # TODO: only write the file if the score of the new solution is better than the old one.
+        if score <= SCORES[size][file_name]:
+            return
+        # Don't forget to update the JSON SCORES dictionary.
+        SCORES[size][file_name] = score
+        update_scores()
 
         if verbose:
-            print("[{}] Score for {}{}:  {}".format(str(datetime.datetime.utcnow())[11:], directory, file_name, score))
+            print("[{}] Score for {}/{}:  {}".format(str(datetime.datetime.utcnow())[11:],
+                                                    output_category_path, file_name, score))
 
-        with open("{}{}.out".format(directory, file_name), 'w', encoding='utf8') as f:
+        with open("{}/{}.out".format(output_category_path, file_name), 'w', encoding='utf8') as f:
             for lst in self.solution:
                 f.write(str(lst))
                 f.write("\n")
@@ -699,6 +715,33 @@ def parse_input(folder_name):
     return graph, num_buses, bus_size, constraints
 
 
+def initial_scores():
+    size_categories = ["small", "medium", "large"]
+    global SCORES
+
+    for size in size_categories:
+        category_path = path_to_inputs + "/" + size
+        category_dir = os.fsencode(category_path)
+        for input_folder in os.listdir(category_dir):
+            input_name = os.fsdecode(input_folder)
+            SCORES[size][input_name] = -1
+
+    with open("{}/scores.json".format(path_to_outputs), 'w') as outfile:
+        json.dump(SCORES, outfile)
+
+
+def get_scores():
+    global SCORES
+    with open("{}/scores.json".format(path_to_outputs), 'r+') as infile:
+        SCORES = json.loads(infile)
+
+
+def update_scores():
+    global SCORES
+    with open("{}/scores.json".format(path_to_outputs), 'w') as outfile:
+        json.dump(SCORES, outfile)
+
+
 def solve(graph, num_buses, bus_size, constraints):
     """
     Params are obvious, they are from the skeleton code.
@@ -711,7 +754,7 @@ def solve(graph, num_buses, bus_size, constraints):
     # Currently it is some temp test code.
     solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
     solver.solve()
-    optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=True)
+    optimizer = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=True)
     optimizer.solve()
     return optimizer
 
@@ -727,6 +770,13 @@ def main():
     size_categories = ["small"]
     if not os.path.isdir(path_to_outputs):
         os.mkdir(path_to_outputs)
+
+    # Initialize SCORES if not done so, or else pull from the JSON file.
+    score_path = path_to_outputs + "/scores.json"
+    if not os.path.isfile(score_path):
+        initial_scores()
+    else:
+        get_scores()
 
     for size in size_categories:
         category_path = path_to_inputs + "/" + size
