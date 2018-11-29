@@ -110,7 +110,7 @@ class Solver:
             SCORES[file_path] = score
         elif SCORES[file_path] >= score:
             if verbose:
-                print("[{}] Score for {} was lower (or equal), did not write. (diff = {})".format(
+                print("[{}] Score for {} was LOWER (or equal). DID NOT WRITE. (diff = {})".format(
                     str(datetime.datetime.utcnow())[11:], file_path, SCORES[file_path] - score))
             return
 
@@ -617,7 +617,7 @@ class BasicOptimizer(Optimizer):
         last_iter_score = score
         # If we don't have two buses no swapping will occur
         if self.num_buses < 2:
-            print("")
+            print("Stopped BasicOptimizer on iteration 0.")
             return self.solution
         # Each iteration we will discover one swap to make
         for i in range(max_iterations):
@@ -631,12 +631,11 @@ class BasicOptimizer(Optimizer):
                 score = self.swap(student_1, student_2, bus1, bus2, score)
 
             if self.verbose:
-                sys.stdout.write(f"\rScore on iteration {i}: {score}")
+                sys.stdout.write(f"\r\tScore on iteration {i} with score: {score}")
                 sys.stdout.flush()
             if score == last_iter_score:
                 if self.verbose:
-                    sys.stdout.write(f"\rStopped BasicOptimizer on iteration "
-                                     f"{i}, with score: {score}")
+                    sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i}.")
                     sys.stdout.flush()
                 break
         print("")
@@ -697,12 +696,11 @@ class TreeSearchOptimizer(Optimizer):
                 score = self.rollout(score)
 
             if self.verbose:
-                sys.stdout.write(f"\rScore on iteration {iteration}: {score}")
+                sys.stdout.write(f"\r\tScore on iteration {iteration} with score: {score}")
                 sys.stdout.flush()
             if score == last_iter_score:
                 if self.verbose:
-                    sys.stdout.write(f"\rStopped TreeSearchOptimizer on iteration "
-                                     f"{iteration}, with score: {score}")
+                    sys.stdout.write(f"\r\tStopped TreeSearchOptimizer on iteration {iteration}")
                     sys.stdout.flush()
                 break
         print("")
@@ -745,13 +743,13 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
     depending on some future solvers that we implement.
     """
     if verbose:
-        sys.stdout.write("\rSolving using DiracDeltaHeuristicBase...")
+        sys.stdout.write("\r\tSolving using DiracDeltaHeuristicBase...")
         sys.stdout.flush()
     solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
     solver.solve()
 
     if verbose:
-        sys.stdout.write("\rOptimizing using BasicOptimizer...")
+        sys.stdout.write("\r\tOptimizing using BasicOptimizer...")
         sys.stdout.flush()
     optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
     optimizer.solve()
@@ -789,7 +787,7 @@ def main():
         for input_folder in os.listdir(category_dir):
             input_name = os.fsdecode(input_folder)
             graph, num_buses, bus_size, constraints = parse_input(category_path + "/" + input_name)
-            solver_instance = solve(graph, num_buses, bus_size, constraints, False)
+            solver_instance = solve(graph, num_buses, bus_size, constraints, verbose=True)
             solver_instance.write(input_name, output_category_path, verbose=True)
 
 
