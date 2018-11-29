@@ -446,6 +446,8 @@ class Optimizer(Solver):
         Solver.__init__(self, graph, num_buses, bus_size, constraints, solution=solution)
 
     def solve(self):
+        if self.num_buses == 1:
+            return
         self.optimize()
 
     def remove_vertex(self, vertex, bus):
@@ -507,7 +509,13 @@ class Optimizer(Solver):
 
     def sample_swap(self):
         # Pick two random buses and one random vertex from each bus to swap
-        bus1, bus2 = np.random.choice(list(range(self.num_buses)), 2, replace=False)
+        while True:
+            bus1, bus2 = np.random.choice(list(range(self.num_buses)), 2, replace=False)
+
+            # Make sure that we don't swap the last member out of a bus
+            if len(self.solution[bus1]) > 1 and len(self.solution[bus2]) > 1:
+                break
+
         # Sample a vertex from each bus
         open_seats1 = self.bus_size - len(self.solution[bus1])
         # Determine if we select an empty seat or not
@@ -645,8 +653,7 @@ class BasicOptimizer(Optimizer):
 # A fancier optimizer that will look more than one step ahead
 class TreeSearchOptimizer(Optimizer):
 
-    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, max_rollout=5,
-                 verbose=False):
+    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=500, max_rollout=20, verbose=False):
         Solver.__init__(self, graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
         self.max_rollout = max_rollout
@@ -753,7 +760,8 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
     if verbose:
         sys.stdout.write("\rOptimizing using BasicOptimizer...")
         sys.stdout.flush()
-    optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
+    # optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
+    optimizer = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=True)
     optimizer.solve()
 
     return optimizer
@@ -769,6 +777,7 @@ def main():
     global SCORES
 
     size_categories = ["small", "medium", "large"]
+    size_categories = ["small"]
     if not os.path.isdir(path_to_outputs):
         os.mkdir(path_to_outputs)
 
@@ -789,8 +798,8 @@ def main():
         for input_folder in os.listdir(category_dir):
             input_name = os.fsdecode(input_folder)
             graph, num_buses, bus_size, constraints = parse_input(category_path + "/" + input_name)
-            solver_instance = solve(graph, num_buses, bus_size, constraints, False)
-            solver_instance.write(input_name, output_category_path, verbose=True)
+            solver_instance = solve(graph, num_buses, bus_size, constraints, True)
+            solver_instance.write(input_name, output_category_path, verbose=False)
 
 
 if __name__ == '__main__':
