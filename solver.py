@@ -798,13 +798,10 @@ def main():
         for input_folder in os.listdir(category_dir):
             input_name = os.fsdecode(input_folder)
             graph, num_buses, bus_size, constraints = parse_input(category_path + "/" + input_name)
-<<<<<<< HEAD
             solver_instance = solve(graph, num_buses, bus_size, constraints, True)
             solver_instance.write(input_name, output_category_path, verbose=False)
-=======
             solver_instance = solve(graph, num_buses, bus_size, constraints, verbose=True)
             solver_instance.write(input_name, output_category_path, verbose=True)
->>>>>>> 2d18c34f78deacf1f06c524c0eabd0939a033ca0
 
 
 if __name__ == '__main__':
