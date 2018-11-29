@@ -300,8 +300,6 @@ class Heuristic(Solver):
         #       - Maybe make full bus checking similar to a temperature check / probability thing?
         #         This allows you to hop around?
 
-        # TODO: local search (starting at preliminary solution from above) for a satisfying solution.
-
         return self.solution
 
 
