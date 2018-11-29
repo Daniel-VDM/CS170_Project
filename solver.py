@@ -131,6 +131,8 @@ class Solver:
         attendance = {student: False for student in graph.nodes()}
         for i in range(len(assignments)):
             if not all([student in graph for student in assignments[i]]):
+                print(assignments[i])
+                print(graph.nodes)
                 return -1, "Bus {} references a non-existant student: {}".format(i, assignments[i])
 
             for student in assignments[i]:
@@ -444,7 +446,7 @@ class BasicOptimizer(Solver):
         left_hand_list = []
         right_hand_list = []
         seen_element = False
-
+        print(f"Removed: {vertex}")
         for element in temp_list:
             if element == vertex:
                 continue
@@ -483,8 +485,10 @@ class BasicOptimizer(Solver):
         self.remove_vertex(vertex_1, bus1)
         self.remove_vertex(vertex_2, bus2)
         # Add the vertices to the opposite bus
-        self.solution[bus1] += [vertex_2]
-        self.solution[bus2] += [vertex_1]
+        if vertex_2 is not None:
+            self.solution[bus1] += [vertex_2]
+        if vertex_1 is not None:
+            self.solution[bus2] += [vertex_1]
         # Recompute the score
         new_score = self.set_score()[0]
         # return the new score if it is larger and update the solution
@@ -498,11 +502,13 @@ class BasicOptimizer(Solver):
     def optimize(self, max_iterations=1000):
         # Initialize the score
         score = self.set_score()[0]
+        last_iter_score = score
         # If we don't have two buses no swapping will occur
         if self.num_buses < 2:
             return self.solution
         # Each iteration we will discover one swap to make
         for i in range(max_iterations):
+            last_iter_score = score
             # If we have monte_carlo set to true we will sample the optimization space
             for sample in range(self.sample_size):
                 # Sample a number of vertex combinations to try swapping
@@ -517,7 +523,7 @@ class BasicOptimizer(Solver):
                 if choose_empty_seat:
                     student_1 = None
                 else:
-                    student_1 = np.random.choice(self.solution)
+                    student_1 = np.random.choice(self.solution[bus1])
 
                 # Choose a second student with the requirement that we not try to swap two empty seats
                 if student_1 is None:
@@ -535,6 +541,9 @@ class BasicOptimizer(Solver):
 
             if i % 100 == 0:
                 print(f"Score on iteration {i}: {score}")
+            if score == last_iter_score:
+                print("Broke")
+                break
 
 
 def parse_input(folder_name):
