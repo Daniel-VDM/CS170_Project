@@ -5,7 +5,9 @@ import copy
 import matplotlib.pyplot as plt
 import bisect
 import datetime
+import sys
 from collections import deque
+import time
 
 ###########################################
 # Change this variable to the path to 
@@ -85,7 +87,7 @@ class Solver:
         :param verbose: print message or not.
         :raises: ValueError if the score is not valid, with an accompanying message.
         """
-        score, msg = self.set_score()
+        score, msg = self.official_scorer()
         if score < 0:
             raise ValueError("Solution object for {}{} has a negative score. "
                              "Scorer Message: {}".format(directory, file_name, msg))
@@ -100,7 +102,7 @@ class Solver:
                 f.write(str(lst))
                 f.write("\n")
 
-    def set_score(self):
+    def official_scorer(self):
         """
         Formulates and returns the score of the self.solution, where the score is a number
         between 0 and 1 which represents what fraction of friendships were broken.
@@ -136,7 +138,73 @@ class Solver:
             for student in assignments[i]:
                 # if a student appears more than once
                 if attendance[student]:
-                    print(assignments[i])
+                    return -1, "{0} appears more than once in the bus assignments".format(student)
+
+                attendance[student] = True
+                bus_assignments[student] = i
+
+        # make sure each student is accounted for
+        if not all(attendance.values()):
+            return -1, "Not all students have been assigned a bus"
+
+        total_edges = graph.number_of_edges()
+        # Remove nodes for rowdy groups which were not broken up
+        for i in range(len(constraints)):
+            buses = set()
+            for student in constraints[i]:
+                buses.add(bus_assignments[student])
+            if len(buses) <= 1:
+                for student in constraints[i]:
+                    if student in graph:
+                        graph.remove_node(student)
+
+        # score output
+        score = 0
+        for edge in graph.edges():
+            if bus_assignments[edge[0]] == bus_assignments[edge[1]]:
+                score += 1
+        self.score = score / total_edges
+        return self.score, "Valid score of: {}".format(self.score)
+
+    def set_score(self):
+        """
+
+        TODO: Efficient scorer
+
+        Formulates and returns the score of the self.solution, where the score is a number
+        between 0 and 1 which represents what fraction of friendships were broken.
+
+        Sets self.score
+
+        :return: Tuple where el 0 is the score and el 1 is the accompanying msg string.
+        """
+        graph = self.graph.copy()
+        num_buses = self.num_buses
+        bus_size = self.bus_size
+        constraints = self.constraints
+        assignments = self.solution
+
+        if len(assignments) != num_buses:
+            return -1, "Must assign students to exactly {} buses, found {} buses".format(num_buses, len(assignments))
+
+        # make sure no bus is empty or above capacity
+        for i in range(len(assignments)):
+            if len(assignments[i]) > bus_size:
+                return -1, "Bus {} is above capacity".format(i)
+            if len(assignments[i]) <= 0:
+                return -1, "Bus {} is empty".format(i)
+
+        bus_assignments = {}
+
+        # make sure each student is in exactly one bus
+        attendance = {student: False for student in graph.nodes()}
+        for i in range(len(assignments)):
+            if not all([student in graph for student in assignments[i]]):
+                return -1, "Bus {} references a non-existant student: {}".format(i, assignments[i])
+
+            for student in assignments[i]:
+                # if a student appears more than once
+                if attendance[student]:
                     return -1, "{0} appears more than once in the bus assignments".format(student)
 
                 attendance[student] = True
@@ -538,8 +606,10 @@ class BasicOptimizer(Optimizer):
                 # Swap these two students
                 score = self.swap(student_1, student_2, bus1, bus2, score)
 
-            if i % 100 == 0 and self.verbose:
-                print(f"Score on iteration {i}: {score}")
+            if self.verbose:
+                msg = "Score on iteration {}: {}".format(i, score)
+                sys.stdout.write(msg)
+                sys.stdout.flush()
             if score == last_iter_score:
                 break
 
@@ -612,7 +682,7 @@ def solve(graph, num_buses, bus_size, constraints):
     # Currently it is some temp test code.
     solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
     solver.solve()
-    optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution)
+    optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=True)
     optimizer.solve()
     return optimizer
 
@@ -641,7 +711,7 @@ def main():
             input_name = os.fsdecode(input_folder)
             graph, num_buses, bus_size, constraints = parse_input(category_path + "/" + input_name)
             solver_instance = solve(graph, num_buses, bus_size, constraints)
-            solver_instance.write(input_name, "{}/".format(output_category_path), verbose=False)
+            solver_instance.write(input_name, "{}/".format(output_category_path), verbose=True)
 
 
 if __name__ == '__main__':
