@@ -547,19 +547,45 @@ class BasicOptimizer(Optimizer):
 # A fancier optimizer that will look more than one step ahead
 class TreeSearchOptimizer(Optimizer):
 
-    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, max_rollout=5):
+    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, max_rollout=5, verbose=False):
         Solver.__init__(self, graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
         self.max_rollout = max_rollout
+        self.verbose = verbose
 
-    def rollout(self, depth):
+    # Override swap because we don't want to copy or cancel out inferior solutions until rollout is complete
+    def swap(self, vertex_1, vertex_2, bus1, bus2):
+        # to hold the place of the old solution before swapping
+        # Swap the vertices in the new solution
+        # First remove the vertices from their buses
+        self.remove_vertex(vertex_1, bus1)
+        self.remove_vertex(vertex_2, bus2)
+        # Add the vertices to the opposite bus
+        if vertex_2 is not None:
+            self.solution[bus1] += [vertex_2]
+        if vertex_1 is not None:
+            self.solution[bus2] += [vertex_1]
+
+    def rollout(self, init_score):
 
         solution_holder = copy.deepcopy(self.solution)
 
         for step in range(self.max_rollout):
             # At each step we sample a swap
             # First sample two busses
-            print("done")
+            student_1, student_2, bus1, bus2 = self.sample_swap()
+
+            # swap these students and get a new temporary solution
+            self.swap(student_1, student_2, bus1, bus2)
+
+        # Score this rollout
+        new_score = self.set_score()[0]
+
+        if new_score >= init_score:
+            return new_score
+        else:
+            self.solution = solution_holder
+            return init_score
 
     def optimize(self, max_iterations=1000):
         score = self.set_score()[0]
@@ -569,7 +595,12 @@ class TreeSearchOptimizer(Optimizer):
             last_iter_score = score
             for sample in range(self.sample_size):
                 # For every time we expand with the rollout policy we call the method rollout to sample
-                self.rollout()
+                score = self.rollout(score)
+
+            if iteration % 100 == 0 and self.verbose:
+                print(f"Score on iteration {iteration}: {score}")
+            if score == last_iter_score:
+                break
 
 
 def parse_input(folder_name):
@@ -612,7 +643,7 @@ def solve(graph, num_buses, bus_size, constraints):
     # Currently it is some temp test code.
     solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
     solver.solve()
-    optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution)
+    optimizer = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=True)
     optimizer.solve()
     return optimizer
 
