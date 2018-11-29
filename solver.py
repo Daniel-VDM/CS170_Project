@@ -111,13 +111,13 @@ class Solver:
             SCORES[file_path] = score
         elif SCORES[file_path] >= score:
             if verbose:
-                print("[{}] Score for {} was LOWER (or equal). DID NOT WRITE. (diff = {})\n".format(
-                    str(datetime.datetime.utcnow())[11:], file_path, SCORES[file_path] - score))
+                print("[{}] New score for {} was <= to old score. DID NOT WRITE. (diff = {})\n".format(
+                    str(datetime.datetime.utcnow())[11:], file_path, round(SCORES[file_path] - score, 5)))
             return
 
         if verbose:
             print("[{}] Score for {}:  {}\n".format(str(datetime.datetime.utcnow())[11:],
-                                                    file_path, score))
+                                                    file_path, round(score, 5)))
         with open(file_path, 'w', encoding='utf8') as f:
             for lst in self.solution:
                 f.write(str(lst))
@@ -571,7 +571,7 @@ class BasicOptimizer(Optimizer):
         last_iter_score = score
         # If we don't have two buses no swapping will occur
         if self.num_buses < 2:
-            sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i}")
+            sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i} {' '*20}")
             sys.stdout.flush()
             print("")
             return
@@ -588,11 +588,11 @@ class BasicOptimizer(Optimizer):
                 score = self.swap(student_1, student_2, bus1, bus2, score)
 
             if self.verbose:
-                sys.stdout.write(f"\r\tScore on iteration {i} of BasicOptimizer: {score}")
+                sys.stdout.write(f"\r\tScore on iteration {i} of BasicOptimizer: {round(score,5)}")
                 sys.stdout.flush()
             if score == last_iter_score:
                 if self.verbose:
-                    sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i}")
+                    sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i} {' '*20}")
                     sys.stdout.flush()
                 break
         if self.verbose:
@@ -655,11 +655,11 @@ class TreeSearchOptimizer(Optimizer):
                 score = self.rollout(score)
 
             if self.verbose:
-                sys.stdout.write(f"\r\tScore on iteration {iteration} of TreeSearchOptimizer: {score}")
+                sys.stdout.write(f"\r\tScore on iteration {iteration} of TreeSearchOptimizer: {round(score,5)}")
                 sys.stdout.flush()
             if score == last_iter_score:
                 if self.verbose:
-                    sys.stdout.write(f"\r\tStopped TreeSearchOptimizer on iteration {iteration}")
+                    sys.stdout.write(f"\r\tStopped TreeSearchOptimizer on iteration {iteration} {' '*20}")
                     sys.stdout.flush()
                 break
         if self.verbose:
@@ -677,7 +677,7 @@ def parse_input(folder_name):
             (graph, num_buses, bus_size, constraints)
             graph - the graph as a NetworkX object
             num_buses - an integer representing the number of buses you can allocate to
-            bus_sizees - an integer representing the number of students that can fit on a bus
+            bus_sizes - an integer representing the number of students that can fit on a bus
             constraints - a list where each element is a list vertices which represents a single rowdy group
     """
     graph = nx.read_gml(folder_name + "/graph.gml")
@@ -703,13 +703,13 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
     depending on some future solvers that we implement.
     """
     if verbose:
-        sys.stdout.write("\r\tSolving using DiracDeltaHeuristicBase...")
+        sys.stdout.write(f"\r\tSolving using DiracDeltaHeuristicBase... {' '*20}")
         sys.stdout.flush()
     solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
     solver.solve()
 
     if verbose:
-        sys.stdout.write("\r\tOptimizing...")
+        sys.stdout.write(f"\r\tOptimizing... {' '*30}")
         sys.stdout.flush()
     solver = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
     solver.solve()
@@ -734,9 +734,11 @@ def main():
 
     # Load previous scores from file if such file exists.
     if os.path.isfile(score_path):
-        print("!!~~ LOADED PREVIOUS SCORES ~~!!\n")
         with open(score_path, 'r+') as f:
-            SCORES = json.loads(f.read())
+            lines = f.read()
+            if lines:
+                print("!!~~ LOADED PREVIOUS SCORES ~~!!\n")
+                SCORES = json.loads(lines)
 
     t_start = time.time()
     for size in size_categories:
@@ -760,4 +762,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    for _ in range(1):
+        main()
