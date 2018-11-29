@@ -777,7 +777,7 @@ def main():
     global SCORES
 
     size_categories = ["small", "medium", "large"]
-    size_categories = ["small"]
+    size_categories = ["large"]
     if not os.path.isdir(path_to_outputs):
         os.mkdir(path_to_outputs)
 
