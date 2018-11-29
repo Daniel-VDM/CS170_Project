@@ -111,7 +111,7 @@ class Solver:
 
         if verbose:
             print("[{}] Score for {}/{}:  {}".format(str(datetime.datetime.utcnow())[11:],
-                                                    output_category_path, file_name, score))
+                                                     output_category_path, file_name, score))
 
         with open("{}/{}.out".format(output_category_path, file_name), 'w', encoding='utf8') as f:
             for lst in self.solution:
@@ -383,7 +383,7 @@ class DiracDeltaHeuristicBase(Heuristic):
         """
         numerator = np.exp(-((x - rowdy_size) ** 2) / (2 * DiracDeltaHeuristicBase.sig))
         denominator = DiracDeltaHeuristicBase.sig * np.sqrt(2 * np.pi)
-        return (numerator/denominator)*c
+        return (numerator / denominator) * c
 
     def people_on_bus_count(self, bus_num, group):
         """
@@ -631,7 +631,8 @@ class BasicOptimizer(Optimizer):
 # A fancier optimizer that will look more than one step ahead
 class TreeSearchOptimizer(Optimizer):
 
-    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, max_rollout=5, verbose=False):
+    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, max_rollout=5,
+                 verbose=False):
         Solver.__init__(self, graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
         self.max_rollout = max_rollout
