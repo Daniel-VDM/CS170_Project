@@ -108,22 +108,23 @@ class Solver:
         prev_score = SCORES.get(file_path, None)
         if prev_score is None:
             SCORES[file_path] = score
-        elif SCORES[file_path] < score:
-            if verbose:
-                print("[{}] Score for {}:  {}".format(str(datetime.datetime.utcnow())[11:],
-                                                      file_path, score))
-            with open(file_path, 'w', encoding='utf8') as f:
-                for lst in self.solution:
-                    f.write(str(lst))
-                    f.write("\n")
-
-            # Update jason file's scores.
-            with open(score_path, 'w') as f:
-                json.dump(SCORES, f)
-        else:
+        elif SCORES[file_path] >= score:
             if verbose:
                 print("[{}] Score for {} was LOWER (or equal). DID NOT WRITE. (diff = {})".format(
                     str(datetime.datetime.utcnow())[11:], file_path, SCORES[file_path] - score))
+            return
+
+        if verbose:
+            print("[{}] Score for {}:  {}".format(str(datetime.datetime.utcnow())[11:],
+                                                  file_path, score))
+        with open(file_path, 'w', encoding='utf8') as f:
+            for lst in self.solution:
+                f.write(str(lst))
+                f.write("\n")
+
+        # Update jason file's scores.
+        with open(score_path, 'w') as f:
+            json.dump(SCORES, f)
 
     def official_scorer(self):
         """
@@ -757,14 +758,15 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
     solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
     solver.solve()
 
-    if verbose:
-        sys.stdout.write("\r\tOptimizing using BasicOptimizer...")
-        sys.stdout.flush()
-    # optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
-    optimizer = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=True)
-    optimizer.solve()
+    # if verbose:
+    #     sys.stdout.write("\r\tOptimizing using BasicOptimizer...")
+    #     sys.stdout.flush()
+    # # optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
+    # optimizer = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
+    # optimizer.solve()
 
-    return optimizer
+    print("")
+    return solver
 
 
 def main():
@@ -777,7 +779,6 @@ def main():
     global SCORES
 
     size_categories = ["small", "medium", "large"]
-    size_categories = ["small"]
     if not os.path.isdir(path_to_outputs):
         os.mkdir(path_to_outputs)
 
@@ -798,8 +799,6 @@ def main():
         for input_folder in os.listdir(category_dir):
             input_name = os.fsdecode(input_folder)
             graph, num_buses, bus_size, constraints = parse_input(category_path + "/" + input_name)
-            solver_instance = solve(graph, num_buses, bus_size, constraints, True)
-            solver_instance.write(input_name, output_category_path, verbose=False)
             solver_instance = solve(graph, num_buses, bus_size, constraints, verbose=True)
             solver_instance.write(input_name, output_category_path, verbose=True)
 
