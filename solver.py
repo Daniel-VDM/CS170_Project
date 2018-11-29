@@ -9,6 +9,7 @@ import sys
 import json
 import time
 import datetime
+from shutil import copyfile
 from collections import deque
 
 ###########################################
@@ -124,6 +125,8 @@ class Solver:
                 f.write("\n")
 
         # Update jason file's scores.
+        if os.path.isfile(score_path):
+            copyfile(score_path, f"{score_path}.bak")  # Backup file
         with open(score_path, 'w') as f:
             json.dump(SCORES, f)
 
