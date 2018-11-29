@@ -108,10 +108,10 @@ class Solver:
         update_scores()
 
         if verbose:
-            print("[{}] Score for {}{}:  {}".format(str(datetime.datetime.utcnow())[11:],
+            print("[{}] Score for {}/{}:  {}".format(str(datetime.datetime.utcnow())[11:],
                                                     output_category_path, file_name, score))
 
-        with open("{}{}.out".format(output_category_path, file_name), 'w', encoding='utf8') as f:
+        with open("{}/{}.out".format(output_category_path, file_name), 'w', encoding='utf8') as f:
             for lst in self.solution:
                 f.write(str(lst))
                 f.write("\n")
