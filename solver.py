@@ -29,7 +29,7 @@ path_to_outputs = "./outputs"
 # dictionary of the three sized dictionaries
 # which store each input_name to a score.
 ###########################################
-score_path = "" #f"{path_to_outputs}/scores.json"
+score_path = f"{path_to_outputs}/scores.json"
 SCORES = {}
 
 
@@ -124,6 +124,19 @@ class Solver:
             if verbose:
                 print("[{}] Score for {} was LOWER (or equal). DID NOT WRITE. (diff = {})".format(
                     str(datetime.datetime.utcnow())[11:], file_path, SCORES[file_path] - score))
+            return
+
+        if verbose:
+            print("[{}] Score for {}:  {}".format(str(datetime.datetime.utcnow())[11:],
+                                                  file_path, score))
+        with open(file_path, 'w', encoding='utf8') as f:
+            for lst in self.solution:
+                f.write(str(lst))
+                f.write("\n")
+
+        # Update jason file's scores.
+        with open(score_path, 'w') as f:
+            json.dump(SCORES, f)
 
     def official_scorer(self):
         """
@@ -635,7 +648,8 @@ class BasicOptimizer(Optimizer):
                 student_1, student_2, bus1, bus2 = self.sample_swap()
 
                 if student_1 is None and student_2 is None and bus1 is None and bus2 is None:
-                    print("NO SWAP")
+                    if self.verbose:
+                        print("NO SWAP")
                     break
                 # Swap these two students
                 score = self.swap(student_1, student_2, bus1, bus2, score)
@@ -684,7 +698,8 @@ class TreeSearchOptimizer(Optimizer):
             student_1, student_2, bus1, bus2 = self.sample_swap()
 
             if student_1 is None and student_2 is None and bus1 is None and bus2 is None:
-                print("NO SWAP")
+                if self.verbose:
+                    print("NO SWAP")
                 break
             # swap these students and get a new temporary solution
             self.swap(student_1, student_2, bus1, bus2)
@@ -765,10 +780,11 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
         sys.stdout.write("\r\tOptimizing using BasicOptimizer...")
         sys.stdout.flush()
     # optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
-    optimizer = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=True)
+    optimizer = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
     optimizer.solve()
 
     return optimizer
+    # return solver
 
 
 def main():
@@ -806,7 +822,6 @@ def main():
             solver_instance.write(input_name, output_category_path, verbose=False)
             # solver_instance = solve(graph, num_buses, bus_size, constraints, verbose=True)
             # solver_instance.write(input_name, output_category_path, verbose=True)
-
 
 if __name__ == '__main__':
     main()
