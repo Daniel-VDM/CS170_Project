@@ -108,23 +108,22 @@ class Solver:
         prev_score = SCORES.get(file_path, None)
         if prev_score is None:
             SCORES[file_path] = score
-        elif SCORES[file_path] >= score:
+        elif SCORES[file_path] < score:
+            if verbose:
+                print("[{}] Score for {}:  {}".format(str(datetime.datetime.utcnow())[11:],
+                                                      file_path, score))
+            with open(file_path, 'w', encoding='utf8') as f:
+                for lst in self.solution:
+                    f.write(str(lst))
+                    f.write("\n")
+
+            # Update jason file's scores.
+            with open(score_path, 'w') as f:
+                json.dump(SCORES, f)
+        else:
             if verbose:
                 print("[{}] Score for {} was LOWER (or equal). DID NOT WRITE. (diff = {})".format(
                     str(datetime.datetime.utcnow())[11:], file_path, SCORES[file_path] - score))
-            return
-
-        if verbose:
-            print("[{}] Score for {}:  {}".format(str(datetime.datetime.utcnow())[11:],
-                                                  file_path, score))
-        with open(file_path, 'w', encoding='utf8') as f:
-            for lst in self.solution:
-                f.write(str(lst))
-                f.write("\n")
-
-        # Update jason file's scores.
-        with open(score_path, 'w') as f:
-            json.dump(SCORES, f)
 
     def official_scorer(self):
         """
@@ -617,7 +616,9 @@ class BasicOptimizer(Optimizer):
         last_iter_score = score
         # If we don't have two buses no swapping will occur
         if self.num_buses < 2:
-            print("Stopped BasicOptimizer on iteration 0.")
+            sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration 0.")
+            sys.stdout.flush()
+            print("")
             return self.solution
         # Each iteration we will discover one swap to make
         for i in range(max_iterations):
@@ -639,6 +640,7 @@ class BasicOptimizer(Optimizer):
                     sys.stdout.flush()
                 break
         print("")
+        return self.solution
 
 
 # A fancier optimizer that will look more than one step ahead
