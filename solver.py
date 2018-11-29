@@ -131,8 +131,6 @@ class Solver:
         attendance = {student: False for student in graph.nodes()}
         for i in range(len(assignments)):
             if not all([student in graph for student in assignments[i]]):
-                print(assignments[i])
-                print(graph.nodes)
                 return -1, "Bus {} references a non-existant student: {}".format(i, assignments[i])
 
             for student in assignments[i]:
@@ -365,7 +363,6 @@ class Optimizer(Solver):
         left_hand_list = []
         right_hand_list = []
         seen_element = False
-        print(f"Removed: {vertex}")
         for element in temp_list:
             if element == vertex:
                 continue
@@ -417,13 +414,38 @@ class Optimizer(Solver):
             self.solution = holder_solution
             return score
 
+    def sample_swap(self):
+        # Pick two random buses and one random vertex from each bus to swap
+        bus1, bus2 = np.random.choice(list(range(self.num_buses)), 2, replace=False)
+        # Sample a vertex from each bus
+        open_seats1 = self.bus_size - len(self.solution[bus1])
+        # Determine if we select an empty seat or not
+        choose_empty_seat = np.random.binomial(1, open_seats1 / self.bus_size)
 
+        # Choose the first student, possibly an empty seat that we swap the second student to
+        if choose_empty_seat:
+            student_1 = None
+        else:
+            student_1 = np.random.choice(self.solution[bus1])
+
+        # Choose a second student with the requirement that we not try to swap two empty seats
+        if student_1 is None:
+            # student_2 cannot be none
+            student_2 = np.random.choice(self.solution[bus2])
+        else:
+            open_seats2 = self.bus_size - len(self.solution[bus2])
+            choose_empty_seat = np.random.binomial(1, open_seats2 / self.bus_size)
+
+            student_2 = None if choose_empty_seat else np.random.choice(self.solution[bus2])
+
+        return student_1, student_2, bus1, bus2
 
 
 class BasicOptimizer(Optimizer):
-    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100):
+    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, verbose=False):
         Optimizer.__init__(self, graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
+        self.verbose = verbose
         # To keep track of the score as we make optimizer steps
         # Setup instance variables
         # self.bus_mapping = None
@@ -511,37 +533,14 @@ class BasicOptimizer(Optimizer):
             # If we have monte_carlo set to true we will sample the optimization space
             for sample in range(self.sample_size):
                 # Sample a number of vertex combinations to try swapping
-                # Pick two random buses and one random vertex from each bus to swap
-                bus1, bus2 = np.random.choice(list(range(self.num_buses)), 2, replace=False)
-                # Sample a vertex from each bus
-                open_seats1 = self.bus_size - len(self.solution[bus1])
-                # Determine if we select an empty seat or not
-                choose_empty_seat = np.random.binomial(1, open_seats1 / self.bus_size)
-
-                # Choose the first student, possibly an empty seat that we swap the second student to
-                if choose_empty_seat:
-                    student_1 = None
-                else:
-                    student_1 = np.random.choice(self.solution[bus1])
-
-                # Choose a second student with the requirement that we not try to swap two empty seats
-                if student_1 is None:
-                    # student_2 cannot be none
-                    student_2 = np.random.choice(self.solution[bus2])
-                else:
-                    open_seats2 = self.bus_size - len(self.solution[bus2])
-                    choose_empty_seat = np.random.binomial(1, open_seats2 / self.bus_size)
-
-                    student_2 = None if choose_empty_seat else np.random.choice(self.solution[bus2])
+                student_1, student_2, bus1, bus2 = self.sample_swap()
 
                 # Swap these two students
-
                 score = self.swap(student_1, student_2, bus1, bus2, score)
 
-            if i % 100 == 0:
+            if i % 100 == 0 and self.verbose:
                 print(f"Score on iteration {i}: {score}")
             if score == last_iter_score:
-                print("Broke")
                 break
 
 
@@ -554,7 +553,13 @@ class TreeSearchOptimizer(Optimizer):
         self.max_rollout = max_rollout
 
     def rollout(self, depth):
-        print("done")
+
+        solution_holder = copy.deepcopy(self.solution)
+
+        for step in range(self.max_rollout):
+            # At each step we sample a swap
+            # First sample two busses
+            print("done")
 
     def optimize(self, max_iterations=1000):
         score = self.set_score()[0]
@@ -564,7 +569,7 @@ class TreeSearchOptimizer(Optimizer):
             last_iter_score = score
             for sample in range(self.sample_size):
                 # For every time we expand with the rollout policy we call the method rollout to sample
-                self.rollout(self.max_rollout)
+                self.rollout()
 
 
 def parse_input(folder_name):
@@ -607,7 +612,6 @@ def solve(graph, num_buses, bus_size, constraints):
     # Currently it is some temp test code.
     solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
     solver.solve()
-    print("GOT TO THIS POINT")
     optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution)
     optimizer.solve()
     return optimizer
