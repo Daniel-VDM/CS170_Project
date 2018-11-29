@@ -117,12 +117,12 @@ class Solver:
         if verbose:
             print("[{}] Score for {}:  {}".format(str(datetime.datetime.utcnow())[11:],
                                                   file_path, score))
-
         with open(file_path, 'w', encoding='utf8') as f:
             for lst in self.solution:
                 f.write(str(lst))
                 f.write("\n")
 
+        # Update jason file's scores.
         with open(score_path, 'w') as f:
             json.dump(SCORES, f)
 
