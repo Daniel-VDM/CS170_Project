@@ -590,13 +590,13 @@ class BasicOptimizer(Optimizer):
             if self.verbose:
                 sys.stdout.write(f"\r\tScore on iteration {i} of BasicOptimizer: {score}")
                 sys.stdout.flush()
-                print("")
             if score == last_iter_score:
                 if self.verbose:
                     sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i}")
                     sys.stdout.flush()
-                    print("")
                 break
+        if self.verbose:
+            print("")
 
 
 # A fancier optimizer that will look more than one step ahead
@@ -657,13 +657,13 @@ class TreeSearchOptimizer(Optimizer):
             if self.verbose:
                 sys.stdout.write(f"\r\tScore on iteration {iteration} of TreeSearchOptimizer: {score}")
                 sys.stdout.flush()
-                print("")
             if score == last_iter_score:
                 if self.verbose:
                     sys.stdout.write(f"\r\tStopped TreeSearchOptimizer on iteration {iteration}")
                     sys.stdout.flush()
-                    print("")
                 break
+        if self.verbose:
+            print("")
 
 
 def parse_input(folder_name):
@@ -750,7 +750,7 @@ def main():
         for input_folder in os.listdir(category_dir):
             input_name = os.fsdecode(input_folder)
             graph, num_buses, bus_size, constraints = parse_input(category_path + "/" + input_name)
-            solver_instance = solve(graph, num_buses, bus_size, constraints, verbose=False)
+            solver_instance = solve(graph, num_buses, bus_size, constraints, verbose=True)
             solver_instance.write(input_name, output_category_path, verbose=True)
 
     time_elapsed = datetime.timedelta(seconds=(time.time() - t_start))
