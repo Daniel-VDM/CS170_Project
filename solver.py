@@ -7,8 +7,9 @@ import bisect
 import datetime
 import sys
 import json
-from collections import deque
 import time
+import datetime
+from collections import deque
 
 ###########################################
 # Change this variable to the path to 
@@ -110,13 +111,13 @@ class Solver:
             SCORES[file_path] = score
         elif SCORES[file_path] >= score:
             if verbose:
-                print("[{}] Score for {} was LOWER (or equal). DID NOT WRITE. (diff = {})".format(
+                print("[{}] Score for {} was LOWER (or equal). DID NOT WRITE. (diff = {})\n".format(
                     str(datetime.datetime.utcnow())[11:], file_path, SCORES[file_path] - score))
             return
 
         if verbose:
-            print("[{}] Score for {}:  {}".format(str(datetime.datetime.utcnow())[11:],
-                                                  file_path, score))
+            print("[{}] Score for {}:  {}\n".format(str(datetime.datetime.utcnow())[11:],
+                                                    file_path, score))
         with open(file_path, 'w', encoding='utf8') as f:
             for lst in self.solution:
                 f.write(str(lst))
@@ -708,12 +709,12 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
     if verbose:
         sys.stdout.write("\r\tOptimizing...")
         sys.stdout.flush()
-    optimizer = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
-    # optimizer = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
-    optimizer.solve()
+    solver = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
+    solver.solve()
+    solver = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
+    solver.solve()
 
-    return optimizer
-    # return solver
+    return solver
 
 
 def main():
@@ -731,10 +732,11 @@ def main():
 
     # Load previous scores from file if such file exists.
     if os.path.isfile(score_path):
-        print("!!~~ LOADED PREVIOUS SCORES ~~!!")
+        print("!!~~ LOADED PREVIOUS SCORES ~~!!\n")
         with open(score_path, 'r+') as f:
             SCORES = json.loads(f.read())
 
+    t_start = time.time()
     for size in size_categories:
         category_path = path_to_inputs + "/" + size
         output_category_path = path_to_outputs + "/" + size
@@ -748,6 +750,11 @@ def main():
             graph, num_buses, bus_size, constraints = parse_input(category_path + "/" + input_name)
             solver_instance = solve(graph, num_buses, bus_size, constraints, verbose=True)
             solver_instance.write(input_name, output_category_path, verbose=True)
+
+    time_elapsed = datetime.timedelta(seconds=(time.time() - t_start))
+    print(f"Time Elapsed: {time_elapsed} hrs")
+    all_scores = list(SCORES.values())
+    print(f"Average Score (on leaderboard): {sum(all_scores)/len(all_scores)}")
 
 
 if __name__ == '__main__':
