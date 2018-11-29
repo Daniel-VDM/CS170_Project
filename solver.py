@@ -98,7 +98,7 @@ class Solver:
         """
         global SCORES
 
-        score, msg = self.official_scorer()
+        score, msg = self.set_score()
         file_path = f"{file_directory}/{file_name}.out"
         if score < 0:
             raise ValueError("Solution object for {}/{} has a negative score. "
@@ -126,13 +126,14 @@ class Solver:
         with open(score_path, 'w') as f:
             json.dump(SCORES, f)
 
-    def official_scorer(self):
+    def set_score(self):
         """
         Formulates and returns the score of the self.solution, where the score is a number
         between 0 and 1 which represents what fraction of friendships were broken.
 
-        This is what is used to score our solutions by the staff.
-        Note that it is destructive to self.graph and copying isn't too efficient.
+        Sets self.score.
+
+        Note that this is NON-DESTRUCTIVE to self.graph.
 
         :return: Tuple where el 0 is the score and el 1 is the accompanying msg string.
         """
@@ -173,7 +174,8 @@ class Solver:
             return -1, "Not all students have been assigned a bus"
 
         total_edges = graph.number_of_edges()
-        # Remove nodes for rowdy groups which were not broken up
+        invalid_vertices = set()
+        # Check for invalid vertices formed by rowdy groups.
         for i in range(len(constraints)):
             buses = set()
             for student in constraints[i]:
@@ -181,79 +183,14 @@ class Solver:
             if len(buses) <= 1:
                 for student in constraints[i]:
                     if student in graph:
-                        graph.remove_node(student)
+                        invalid_vertices.add(student)  # NOTE: change from given scorer is here.
 
         # score output
         score = 0
         for edge in graph.edges():
-            if bus_assignments[edge[0]] == bus_assignments[edge[1]]:
-                score += 1
-        self.score = score / total_edges
-        return self.score, "Valid score of: {}".format(self.score)
-
-    def set_score(self):
-        """
-
-        TODO: Efficient scorer
-
-        Formulates and returns the score of the self.solution, where the score is a number
-        between 0 and 1 which represents what fraction of friendships were broken.
-
-        Sets self.score
-
-        :return: Tuple where el 0 is the score and el 1 is the accompanying msg string.
-        """
-        graph = self.graph.copy()
-        num_buses = self.num_buses
-        bus_size = self.bus_size
-        constraints = self.constraints
-        assignments = self.solution
-
-        if len(assignments) != num_buses:
-            return -1, "Must assign students to exactly {} buses, found {} buses".format(num_buses, len(assignments))
-
-        # make sure no bus is empty or above capacity
-        for i in range(len(assignments)):
-            if len(assignments[i]) > bus_size:
-                return -1, "Bus {} is above capacity".format(i)
-            if len(assignments[i]) <= 0:
-                return -1, "Bus {} is empty".format(i)
-
-        bus_assignments = {}
-
-        # make sure each student is in exactly one bus
-        attendance = {student: False for student in graph.nodes()}
-        for i in range(len(assignments)):
-            if not all([student in graph for student in assignments[i]]):
-                return -1, "Bus {} references a non-existant student: {}".format(i, assignments[i])
-
-            for student in assignments[i]:
-                # if a student appears more than once
-                if attendance[student]:
-                    return -1, "{0} appears more than once in the bus assignments".format(student)
-
-                attendance[student] = True
-                bus_assignments[student] = i
-
-        # make sure each student is accounted for
-        if not all(attendance.values()):
-            return -1, "Not all students have been assigned a bus"
-
-        total_edges = graph.number_of_edges()
-        # Remove nodes for rowdy groups which were not broken up
-        for i in range(len(constraints)):
-            buses = set()
-            for student in constraints[i]:
-                buses.add(bus_assignments[student])
-            if len(buses) <= 1:
-                for student in constraints[i]:
-                    if student in graph:
-                        graph.remove_node(student)
-
-        # score output
-        score = 0
-        for edge in graph.edges():
-            if bus_assignments[edge[0]] == bus_assignments[edge[1]]:
+            u, v = edge
+            if u not in invalid_vertices and v not in invalid_vertices \
+                    and bus_assignments[edge[0]] == bus_assignments[edge[1]]:
                 score += 1
         self.score = score / total_edges
         return self.score, "Valid score of: {}".format(self.score)
@@ -650,7 +587,7 @@ class BasicOptimizer(Optimizer):
                 score = self.swap(student_1, student_2, bus1, bus2, score)
 
             if self.verbose:
-                sys.stdout.write(f"\r\tScore on iteration {i} with score: {score}")
+                sys.stdout.write(f"\r\tScore on iteration {i} of BasicOptimizer: {score}")
                 sys.stdout.flush()
             if score == last_iter_score:
                 if self.verbose:
@@ -716,7 +653,7 @@ class TreeSearchOptimizer(Optimizer):
                 score = self.rollout(score)
 
             if self.verbose:
-                sys.stdout.write(f"\r\tScore on iteration {iteration} with score: {score}")
+                sys.stdout.write(f"\r\tScore on iteration {iteration} of TreeSearchOptimizer: {score}")
                 sys.stdout.flush()
             if score == last_iter_score:
                 if self.verbose:
