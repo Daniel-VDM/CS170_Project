@@ -983,6 +983,9 @@ def parse_input(folder_name):
     return graph, num_buses, bus_size, constraints
 
 
+DATA = {"BOTH_OPT" : 0, "TREE_OPT" : 0}
+
+
 def solve(graph, num_buses, bus_size, constraints, verbose=False):
     """
     Params are obvious, they are from the skeleton code.
@@ -993,16 +996,6 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
     """
     # Try each heuristic before optimizing.
     all_heuristics = []
-    for tie_break in DDHeuristicOversizeCorrection.supported_tie_breaks:
-        for process_order in DDHeuristicOversizeCorrection.supported_process_order:
-            if verbose:
-                sys.stdout.write(f"\r\tSolving using DDHeuristicOversizeCorrection... "
-                                 f"({tie_break}) ({process_order}) {' '* 10}")
-                sys.stdout.flush()
-            solver = DDHeuristicOversizeCorrection(graph, num_buses, bus_size, constraints, tie_break)
-            solver.solve(process_order)
-            all_heuristics.append((solver.set_score()[0], solver.solution))
-
     for tie_break in DDHeuristicTieBreakers.supported_tie_breaks:
         for process_order in DDHeuristicTieBreakers.supported_process_order:
             if verbose:
@@ -1011,9 +1004,26 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
                 sys.stdout.flush()
             solver = DDHeuristicTieBreakers(graph, num_buses, bus_size, constraints, tie_break)
             solver.solve(process_order)
-            all_heuristics.append((solver.set_score()[0], solver.solution))
+            ty = f"TIE_BREAK__{tie_break}__{process_order}"
+            all_heuristics.append((solver.set_score()[0], solver.solution, ty))
 
-    heuristic_sol = max(all_heuristics, key=lambda tup: tup[0])[1]
+    for tie_break in DDHeuristicOversizeCorrection.supported_tie_breaks:
+        for process_order in DDHeuristicOversizeCorrection.supported_process_order:
+            if verbose:
+                sys.stdout.write(f"\r\tSolving using DDHeuristicOversizeCorrection... "
+                                 f"({tie_break}) ({process_order}) {' '* 10}")
+                sys.stdout.flush()
+            solver = DDHeuristicOversizeCorrection(graph, num_buses, bus_size, constraints, tie_break)
+            solver.solve(process_order)
+            ty = f"OVER_CORR__{tie_break}__{process_order}"
+            all_heuristics.append((solver.set_score()[0], solver.solution, ty))
+
+    best = max(all_heuristics, key=lambda tup: tup[0])
+    heuristic_sol = best[1]
+    if best[2] not in DATA:
+        DATA[best[2]] = 1
+    else:
+        DATA[best[2]] += 1
 
     if verbose:
         sys.stdout.write(f"\r\tOptimizing... {' '*30}")
@@ -1033,7 +1043,13 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
 
     # Take the best optimized solution.
     if solver.score > solver2.score:
+        DATA["BOTH_OPT"] += 1
+        with open("best_data", "w") as f:
+            json.dump(DATA, f)
         return solver
+    DATA["TREE_OPT"] += 1
+    with open("best_data", "w") as f:
+        json.dump(DATA, f)
     return solver2
 
 
