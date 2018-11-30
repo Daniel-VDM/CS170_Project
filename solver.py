@@ -116,14 +116,14 @@ class Solver:
             SCORES[file_path] = score
         elif SCORES[file_path] >= score:
             if verbose:
-                print("[{}] New score for {} was <= to old score. DID NOT WRITE. (-diff = {})\n".format(
-                    str(datetime.datetime.utcnow())[11:], file_path, round(SCORES[file_path] - score, 5)))
+                print("[{}] New score for {} was <= to old score. DID NOT WRITE. (diff = {})\n".format(
+                    str(datetime.datetime.utcnow())[11:], file_path, round(score - SCORES[file_path], 5)))
             return
 
         if verbose:
-            print("[{}] Score for {}:  {}  (+diff = {})\n".format(str(datetime.datetime.utcnow())[11:],
-                                                                  file_path, round(score, 5),
-                                                                  round(score - SCORES[file_path], 5)))
+            print("[{}] New Score for {}:  {}  (diff = {})\n".format(str(datetime.datetime.utcnow())[11:],
+                                                                 file_path, round(score, 5),
+                                                                 round(score - SCORES[file_path], 5)))
         with open(file_path, 'w', encoding='utf8') as f:
             for lst in self.solution:
                 f.write(str(lst))
@@ -224,7 +224,7 @@ class Heuristic(Solver):
     def __init__(self, graph, num_buses, bus_size, constraints):
         Solver.__init__(self, graph, num_buses, bus_size, constraints)
         self.solution = [[] for _ in range(self.num_buses)]
-        self.solution_set_rep = np.array(set() for _ in range(self.num_buses))
+        self.solution_set_rep = np.array([set() for _ in range(self.num_buses)])
         self.process_queue = deque()
 
     def set_process_queue(self, kind="LOW_DEGREE"):
@@ -303,6 +303,7 @@ class Heuristic(Solver):
     def move_student(self, v, from_bus_index, to_bus_index):
         """
         Move a student from one bus to another in self.solution
+
         :param v: student (vertex) being moves
         :param from_bus_index: remove from this bus (this is an index)
         :param to_bus_index: add to this bus (this is an index)
@@ -312,12 +313,16 @@ class Heuristic(Solver):
         self.solution[to_bus_index].append(v)
         self.solution_set_rep[to_bus_index].add(v)
 
-    def solve(self):
+    def solve(self, process_order=None):
         """
         The main/default heuristic solver method.
+
+        :param process_order: The order in which the students gets added to buses.
         :return: self.solutions after a solution is found.
         """
-        self.set_process_queue(kind='low_degree')
+        process_order = process_order if process_order else 'low_degree'
+        self.set_process_queue(kind=process_order)
+
         # Add vertices to buses using heuristic following the process_queue's order.
         while self.process_queue:
             # TODO: prio sorting... (method override for the queue)
@@ -372,6 +377,7 @@ class DiracDeltaHeuristicBase(Heuristic):
     def people_on_bus_count(self, bus_num, group):
         """
         Counts the number of people of GROUP that are in bus number: BUS_NUM
+
         :param bus_num: (int) the bus number in self.solution
             this is b in the design doc.
         :param group: (iterable) the group being counted
@@ -459,7 +465,7 @@ class DDHeuristicTieBreakers(DiracDeltaHeuristicBase):
                     denominator += 1
                     break
 
-        return (numerator+1)/(denominator+1)
+        return (numerator + 1) / (denominator + 1)
 
     def heuristic_tie_breaker(self, target, candidates, tie_break=None):
         """
@@ -524,12 +530,16 @@ class DDHeuristicOversizeCorrection(DDHeuristicTieBreakers):
         denominator = max_val + 1
         return numerator / denominator
 
-    def solve(self):
+    def solve(self, process_order=None):
         """
         Slightly different solver for greedy bus oversize correction.
+
+        :param process_order: The order in which the students gets added to buses.
         :return: self.solutions after a solution is found.
         """
-        self.set_process_queue(kind='low_degree')
+        process_order = process_order if process_order else 'low_degree'
+        self.set_process_queue(kind=process_order)
+
         # Add vertices to buses using heuristic following the process_queue's order.
         while self.process_queue:
             target = self.process_queue.popleft()  # queue popping b/c we might use prio-queue
@@ -798,7 +808,8 @@ class BasicOptimizer(Optimizer):
 # A fancier optimizer that will look more than one step ahead
 class TreeSearchOptimizer(Optimizer):
 
-    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, max_rollout=5, verbose=False):
+    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, max_rollout=5,
+                 verbose=False):
         Solver.__init__(self, graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
         self.max_rollout = max_rollout
