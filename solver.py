@@ -261,12 +261,14 @@ class HeuristicPriorityQueue:
             lst = []
             for rank, u in self.lst:
                 u_friends = set(self.solver.graph.neighbors(u))
-                friend_count = 0
+                weight = 0
                 for bus in self.solver.solution:
+                    friend_count = 0
                     for v in bus:
                         if v in u_friends:
                             friend_count += 1
-                bisect.insort(lst, (friend_count, u))
+                    weight = max(weight, friend_count)
+                bisect.insort(lst, (weight, u))
             self.lst = lst
         else:
             raise ValueError(f"{self.rank} is unsupported rank scheme for {self}")
