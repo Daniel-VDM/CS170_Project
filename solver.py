@@ -36,6 +36,10 @@ SCORES = {}
 
 
 class Solver:
+    """
+    Main solver object that has all of the common attributes and methods
+    for using in the heuristic solver and optimizer.
+    """
 
     def __init__(self, graph, num_buses, bus_size, constraints, solution=None):
         self.graph = graph
@@ -206,7 +210,15 @@ class Solver:
         pass
 
 
+####################
+# Heuristic Solver #
+####################
+
+
 class Heuristic(Solver):
+    """
+    Main heuristic solver class that contains all of the shared methods.
+    """
 
     def __init__(self, graph, num_buses, bus_size, constraints):
         Solver.__init__(self, graph, num_buses, bus_size, constraints)
@@ -256,6 +268,15 @@ class Heuristic(Solver):
                 count += 1
         return count
 
+    # noinspection PyMethodMayBeStatic
+    def heuristic_tie_breaker(self, target, candidates):
+        """
+        :param target: the person being processed.
+        :param candidates: list of buses (ints) that have the same heuristic value.
+        :return: a single random candidate.
+        """
+        return np.random.choice(candidates)
+
     def solve(self):
         """
         The main/default heuristic solver method.
@@ -266,17 +287,20 @@ class Heuristic(Solver):
         while self.process_queue:
             target = self.process_queue.popleft()  # queue popping b/c we might use prio-queue
 
-            dest_bus_candidates = [(-1, -1)]  # tuple format for each el: (heuristic_val, bus_number)
+            candidate_buses = []
+            highest_heuristic = -1
             for bus_num in range(self.num_buses):
                 heuristic = self.heuristic(bus_num, target)
-                if heuristic > dest_bus_candidates[0][0]:
-                    dest_bus_candidates = [(heuristic, bus_num)]
-                elif heuristic == dest_bus_candidates[0][0]:
-                    dest_bus_candidates.append((heuristic, bus_num))
+                if heuristic > highest_heuristic:
+                    candidate_buses = [bus_num]
+                    highest_heuristic = heuristic
+                elif heuristic == highest_heuristic:
+                    candidate_buses.append(bus_num)
 
-            # TODO: Think abt this randomness. I don't like it, its too inconsistent.
-            dest_bus_index = 0 if len(dest_bus_candidates) == 1 else np.random.choice(len(dest_bus_candidates))
-            dest_bus = dest_bus_candidates[dest_bus_index][1]
+            if len(candidate_buses) == 1:
+                dest_bus = candidate_buses[0]
+            else:
+                dest_bus = self.heuristic_tie_breaker(target, candidate_buses)
 
             self.solution[dest_bus].append(target)
             self.solution_set_rep[dest_bus].add(target)
@@ -304,7 +328,8 @@ class Heuristic(Solver):
 
 
 class DiracDeltaHeuristicBase(Heuristic):
-    """ This is the basic Dirac Delta Heuristic solver.
+    """
+    This is the basic Dirac Delta Heuristic solver.
     All other variations are based off of this.
     """
 
@@ -378,7 +403,90 @@ class DiracDeltaHeuristicBase(Heuristic):
         return numerator / denominator
 
 
-# noinspection PyMissingConstructor
+class DDHDeterminedTieBreaker(DiracDeltaHeuristicBase):
+    """
+    Same as DiracDeltaHeuristicBase, but has a determined tiebreaker
+    instead of a random one.
+    """
+    supported_tie_breaks = [
+        "LEAST_FULL",
+        "MOST_FULL",
+        "MOST_FRIENDS",
+        "HEURISTIC",
+        "DEFAULT"
+    ]
+
+    def __init__(self, graph, num_buses, bus_size, constraints, tie_break="MOST_FRIENDS"):
+        DiracDeltaHeuristicBase.__init__(self, graph, num_buses, bus_size, constraints)
+        self.tie_break = tie_break.upper()
+
+    def breaker_heuristic(self, bus_num, target):
+        """
+        Heuristic for the deterministic heuristic_tie_breaker of the solve method.
+
+        Logic: N = friends of TARGET in bus number: BUS_NUM.
+               D = Sum r_i; Let i = Constraint group index of TARGET
+                            Have r_i = 1 if any member of constraint group
+                            i is in the bus. r_i = 0 otherwise.
+               Heuristic is then (N+1)/(D+1) (+1 for 0s error).
+
+        :param bus_num: the bus number considered.
+        :param target: the person being processed.
+        :return: Heuristic value described above.
+        """
+        bus_members = set(self.solution[bus_num])
+        numerator = self.people_on_bus_count(bus_num, self.graph.neighbors(target))
+
+        rowdy_group_indices = self.node_to_rowdy_index_dict[target]
+        denominator = 0
+        for i in rowdy_group_indices:
+            for v in self.constraints[i]:
+                if v in bus_members:
+                    denominator += 1
+                    break
+
+        return (numerator+1)/(denominator+1)
+
+    def heuristic_tie_breaker(self, target, candidates, tie_break=None):
+        """
+        :param target: the person being processed.
+        :param candidates: list of buses (ints) that have the same heuristic value.
+        :param tie_break: tye_break type.
+        :return: a single candidate.
+        """
+        tie_break = tie_break if tie_break else self.tie_break
+
+        if tie_break == "LEAST_FULL":
+            return min(candidates, key=lambda i: len(self.solution[i]))
+        elif tie_break == "MOST_FULL":
+            return max(candidates, key=lambda i: len(self.solution[i]))
+        elif tie_break == "MOST_FRIENDS":
+            target_friends = self.graph.neighbors(target)
+            return max(candidates, key=lambda i: self.people_on_bus_count(i, target_friends))
+        elif tie_break == "HEURISTIC":
+            lst = []
+            highest_heuristic = -1
+            for bus_num in candidates:
+                heuristic = self.breaker_heuristic(bus_num, target)
+                if heuristic > highest_heuristic:
+                    lst = [bus_num]
+                    highest_heuristic = heuristic
+                elif heuristic == highest_heuristic:
+                    lst.append(bus_num)
+            if len(lst) > 1:
+                return self.heuristic_tie_breaker(target, lst, tie_break="LEAST_FULL")
+            return lst[0]
+        elif tie_break == "DEFAULT":
+            return super(DiracDeltaHeuristicBase).heuristic_tie_breaker(target, candidates)
+        else:
+            raise ValueError(f"{tie_break} is an invalid tie breaker.")
+
+
+#############
+# Optimizer #
+#############
+
+
 class Optimizer(Solver):
 
     def __init__(self, graph, num_buses, bus_size, constraints, solution):
@@ -667,6 +775,11 @@ class TreeSearchOptimizer(Optimizer):
             print("")
 
 
+############################
+# Main Execution Functions #
+############################
+
+
 def parse_input(folder_name):
     """
         Parses an input and returns the corresponding graph and parameters
@@ -706,7 +819,7 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
     if verbose:
         sys.stdout.write(f"\r\tSolving using DiracDeltaHeuristicBase... {' '*20}")
         sys.stdout.flush()
-    solver = DiracDeltaHeuristicBase(graph, num_buses, bus_size, constraints)
+    solver = DDHDeterminedTieBreaker(graph, num_buses, bus_size, constraints, "HEURISTIC")
     solver.solve()
 
     if verbose:
