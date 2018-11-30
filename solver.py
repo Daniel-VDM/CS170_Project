@@ -269,6 +269,7 @@ class HeuristicPriorityQueue:
                             friend_count += 1
                     weight = max(weight, friend_count)
                 bisect.insort(lst, (weight, u))
+            lst.reverse()
             self.lst = lst
         else:
             raise ValueError(f"{self.rank} is unsupported rank scheme for {self}")
@@ -279,7 +280,7 @@ class HeuristicPriorityQueue:
     def popleft(self):
         if not self.lst:
             raise IndexError("List is empty.")
-        el = self.lst.pop(0)[1]
+        el = self.lst.pop()[1]
         self._rank()
         return el
 
