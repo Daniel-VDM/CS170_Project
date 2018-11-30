@@ -56,14 +56,14 @@ class Solver:
                     lst.append(i)
             self.node_to_rowdy_index_dict[node] = lst[:]
 
-    def get_solution_vertices_by_score(self, limit=None):
+    def get_solution_vertices_by_importance(self, limit=None):
         """
         :param limit: (int) only calculate the first LIMIT el of the returned list.
             Defaults to all vertices in the solution.
         :return: A continuous list of (vertex, solution_bus_num) tuples of self.solution,
-            ordered increasingly by their contribution to the score. So the first el
-            of the returned list contributes the least to the score and the last el
-            contributes the most.
+            ordered increasingly by their contribution to the score + its degree.
+            So the first el of the returned list contributes the least to the score
+            (after accounting for degree) and the last el contributes the most.
         """
         limit = limit if limit else sum(len(l) for l in self.solution)
         lst = []
@@ -88,7 +88,7 @@ class Solver:
                     for neighbor in self.graph.neighbors(u):
                         if neighbor in bus_set:
                             score_contribution += 1
-                    bisect.insort(lst, (score_contribution, (u, i)))
+                    bisect.insort(lst, (score_contribution + self.graph.degree[u], (u, i)))
         return [l[1] for l in lst]
 
     def write(self, file_name, file_directory, verbose=False):
@@ -223,7 +223,7 @@ class Heuristic(Solver):
     def __init__(self, graph, num_buses, bus_size, constraints):
         Solver.__init__(self, graph, num_buses, bus_size, constraints)
         self.solution = [[] for _ in range(self.num_buses)]
-        self.solution_set_rep = np.array([set() for _ in range(self.num_buses)])
+        self.solution_set_rep = np.array(set() for _ in range(self.num_buses))
         self.process_queue = deque()
 
     def set_process_queue(self, kind="LOW_DEGREE"):
@@ -277,6 +277,40 @@ class Heuristic(Solver):
         """
         return np.random.choice(candidates)
 
+    def process_heuristic(self, target, possible_buses):
+        """ Run the heuristic for TARGET on each POSSIBLE_BUSES and
+        return the bus (in POSSIBLE_BUSES) that has the highest heuristic value.
+
+        :param target: student being processes
+        :param possible_buses: all buses to consider.
+        :return: bus with the highest heuristic value.
+        """
+        candidate_buses = []
+        highest_heuristic = -1
+        for bus_num in possible_buses:
+            heuristic = self.heuristic(bus_num, target)
+            if heuristic > highest_heuristic:
+                candidate_buses = [bus_num]
+                highest_heuristic = heuristic
+            elif heuristic == highest_heuristic:
+                candidate_buses.append(bus_num)
+
+        if len(candidate_buses) == 1:
+            return candidate_buses[0]
+        return self.heuristic_tie_breaker(target, candidate_buses)
+
+    def move_student(self, v, from_bus_index, to_bus_index):
+        """
+        Move a student from one bus to another in self.solution
+        :param v: student (vertex) being moves
+        :param from_bus_index: remove from this bus (this is an index)
+        :param to_bus_index: add to this bus (this is an index)
+        """
+        self.solution[from_bus_index].remove(v)
+        self.solution_set_rep[from_bus_index].remove(v)
+        self.solution[to_bus_index].append(v)
+        self.solution_set_rep[to_bus_index].add(v)
+
     def solve(self):
         """
         The main/default heuristic solver method.
@@ -285,44 +319,22 @@ class Heuristic(Solver):
         self.set_process_queue(kind='low_degree')
         # Add vertices to buses using heuristic following the process_queue's order.
         while self.process_queue:
+            # TODO: prio sorting... (method override for the queue)
             target = self.process_queue.popleft()  # queue popping b/c we might use prio-queue
 
-            candidate_buses = []
-            highest_heuristic = -1
-            for bus_num in range(self.num_buses):
-                heuristic = self.heuristic(bus_num, target)
-                if heuristic > highest_heuristic:
-                    candidate_buses = [bus_num]
-                    highest_heuristic = heuristic
-                elif heuristic == highest_heuristic:
-                    candidate_buses.append(bus_num)
-
-            if len(candidate_buses) == 1:
-                dest_bus = candidate_buses[0]
-            else:
-                dest_bus = self.heuristic_tie_breaker(target, candidate_buses)
+            dest_bus = self.process_heuristic(target, range(self.num_buses))
 
             self.solution[dest_bus].append(target)
             self.solution_set_rep[dest_bus].add(target)
 
         # Takes least significant vertices and fill out empty buses
         empty_bus_list = [i for i in range(len(self.solution)) if not self.solution[i]]
-        swapped_vertices = iter(self.get_solution_vertices_by_score())
+        swapped_vertices = iter(self.get_solution_vertices_by_importance())
         for to_bus_index in empty_bus_list:
             v, from_bus_index = next(swapped_vertices)
             while len(self.solution[from_bus_index]) == 1:
                 v, from_bus_index = next(swapped_vertices)
-            self.solution[from_bus_index].remove(v)
-            self.solution_set_rep[from_bus_index].remove(v)
-            self.solution[to_bus_index].append(v)
-            self.solution_set_rep[to_bus_index].add(v)
-
-        # TODO: some sort of greedy correction possibly using the same heuristic...
-        # So, Take lowest degree vertices of oversize buses and add them to non-full buses using heuristic.
-        # Keep doing until no oversize buses.
-        # Maybe add a full bus check to this part's heuristic.
-        #       - Maybe make full bus checking similar to a temperature check / probability thing?
-        #         This allows you to hop around?
+            self.move_student(v, from_bus_index, to_bus_index)
 
         return self.solution
 
@@ -403,10 +415,11 @@ class DiracDeltaHeuristicBase(Heuristic):
         return numerator / denominator
 
 
-class DDHDeterminedTieBreaker(DiracDeltaHeuristicBase):
+class DDHeuristicTieBreakers(DiracDeltaHeuristicBase):
     """
-    Same as DiracDeltaHeuristicBase, but has a determined tiebreaker
+    Same as DiracDeltaHeuristicBase, but has  deterministic tiebreakers
     instead of a random one.
+    Note that we can still use the default random tie breaker if needed.
     """
     supported_tie_breaks = [
         "LEAST_FULL",
@@ -480,6 +493,79 @@ class DDHDeterminedTieBreaker(DiracDeltaHeuristicBase):
             return super(DiracDeltaHeuristicBase).heuristic_tie_breaker(target, candidates)
         else:
             raise ValueError(f"{tie_break} is an invalid tie breaker.")
+
+
+class DDHeuristicOversizeCorrection(DDHeuristicTieBreakers):
+    """
+    This solver allows buses to go over capacity initially, then it
+    greedily corrects this using this classes heuristic.
+    """
+
+    def heuristic(self, bus_num, target):
+        """
+        The heuristic. (overrides inherited heuristic)
+            This is H(.,.) in the design doc
+
+        :param target: current node being processed
+        :param bus_num: the heuristic for the current buss being processed
+        :return: (float) heuristic value
+        """
+        # numerator calculation
+        numerator = self.people_on_bus_count(bus_num, self.graph.neighbors(target)) + 1
+
+        # denominator calculation
+        max_val = 0
+        target_rowdy_groups = (self.constraints[i] for i in self.node_to_rowdy_index_dict[target])
+        for grp in target_rowdy_groups:
+            r = self.people_on_bus_count(bus_num, grp)
+            phi = DiracDeltaHeuristicBase.phi(r, len(grp) - 1, self.phi_constant)
+            max_val = max(max_val, phi)
+        denominator = max_val + 1
+        return numerator / denominator
+
+    def solve(self):
+        """
+        Slightly different solver for greedy bus oversize correction.
+        :return: self.solutions after a solution is found.
+        """
+        self.set_process_queue(kind='low_degree')
+        # Add vertices to buses using heuristic following the process_queue's order.
+        while self.process_queue:
+            target = self.process_queue.popleft()  # queue popping b/c we might use prio-queue
+
+            dest_bus = self.process_heuristic(target, range(self.num_buses))
+
+            self.solution[dest_bus].append(target)
+            self.solution_set_rep[dest_bus].add(target)
+
+        # Greedily correct for over-capacity buses using the class's heuristic. (Makes it slower)
+        over_cap_buses = set(i for i in range(self.num_buses) if len(self.solution[i]) > self.bus_size)
+        if over_cap_buses:
+            invalid_buses = (i for i in range(self.num_buses) if len(self.solution[i]) >= self.bus_size)
+            free_buses = set(range(self.num_buses)) - set(invalid_buses)
+            to_be_removed = []
+            for bus_num in over_cap_buses:
+                invalid_students_count = len(self.solution[bus_num]) - self.bus_size
+                invalid_students = sorted(self.solution[bus_num],
+                                          key=lambda u: self.people_on_bus_count(bus_num, self.graph.neighbors(u)),
+                                          reverse=True)[:invalid_students_count]
+                to_be_removed.extend((u, bus_num) for u in invalid_students)
+            for u, bus_num in to_be_removed:
+                dest_bus = self.process_heuristic(u, free_buses)
+                self.move_student(u, bus_num, dest_bus)
+                if len(self.solution[dest_bus]) >= self.bus_size:
+                    free_buses.remove(dest_bus)
+
+        # Takes least significant vertices and fill out empty buses
+        empty_bus_list = [i for i in range(len(self.solution)) if not self.solution[i]]
+        swapped_vertices = iter(self.get_solution_vertices_by_importance())
+        for to_bus_index in empty_bus_list:
+            v, from_bus_index = next(swapped_vertices)
+            while len(self.solution[from_bus_index]) == 1:
+                v, from_bus_index = next(swapped_vertices)
+            self.move_student(v, from_bus_index, to_bus_index)
+
+        return self.solution
 
 
 #############
@@ -819,7 +905,7 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
     if verbose:
         sys.stdout.write(f"\r\tSolving using DiracDeltaHeuristicBase... {' '*20}")
         sys.stdout.flush()
-    solver = DDHDeterminedTieBreaker(graph, num_buses, bus_size, constraints, "HEURISTIC")
+    solver = DDHeuristicOversizeCorrection(graph, num_buses, bus_size, constraints, "HEURISTIC")
     solver.solve()
 
     if verbose:
