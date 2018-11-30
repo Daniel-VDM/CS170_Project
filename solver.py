@@ -116,13 +116,14 @@ class Solver:
             SCORES[file_path] = score
         elif SCORES[file_path] >= score:
             if verbose:
-                print("[{}] New score for {} was <= to old score. DID NOT WRITE. (diff = {})\n".format(
+                print("[{}] New score for {} was <= to old score. DID NOT WRITE. (-diff = {})\n".format(
                     str(datetime.datetime.utcnow())[11:], file_path, round(SCORES[file_path] - score, 5)))
             return
 
         if verbose:
-            print("[{}] Score for {}:  {}\n".format(str(datetime.datetime.utcnow())[11:],
-                                                    file_path, round(score, 5)))
+            print("[{}] Score for {}:  {}  (+diff = {})\n".format(str(datetime.datetime.utcnow())[11:],
+                                                                  file_path, round(score, 5),
+                                                                  round(score - SCORES[file_path], 5)))
         with open(file_path, 'w', encoding='utf8') as f:
             for lst in self.solution:
                 f.write(str(lst))
