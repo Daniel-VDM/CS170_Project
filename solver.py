@@ -873,7 +873,7 @@ class BasicOptimizer(Optimizer):
                 sys.stdout.flush()
             if score == last_iter_score:
                 if self.verbose:
-                    sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i} {' '*20}")
+                    sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i} {' '*30}")
                     sys.stdout.flush()
                 break
         if self.verbose:
@@ -941,7 +941,7 @@ class TreeSearchOptimizer(Optimizer):
                 sys.stdout.flush()
             if score == last_iter_score:
                 if self.verbose:
-                    sys.stdout.write(f"\r\tStopped TreeSearchOptimizer on iteration {iteration} {' '*20}")
+                    sys.stdout.write(f"\r\tStopped TreeSearchOptimizer on iteration {iteration} {' '*30}")
                     sys.stdout.flush()
                 break
         if self.verbose:
