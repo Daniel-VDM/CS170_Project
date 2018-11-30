@@ -289,6 +289,12 @@ class Heuristic(Solver):
     Main heuristic solver class that contains all of the shared methods.
     """
 
+    supported_process_order = [
+        "LOW_DEGREE",
+        "HIGH_DEGREE",
+        "PRIO_QUEUE"
+    ]
+
     def __init__(self, graph, num_buses, bus_size, constraints):
         Solver.__init__(self, graph, num_buses, bus_size, constraints)
         self.solution = [[] for _ in range(self.num_buses)]
@@ -566,7 +572,7 @@ class DDHeuristicTieBreakers(DiracDeltaHeuristicBase):
                 return self.heuristic_tie_breaker(target, lst, tie_break="LEAST_FULL")
             return lst[0]
         elif tie_break == "DEFAULT":
-            return super(DiracDeltaHeuristicBase).heuristic_tie_breaker(target, candidates)
+            return Heuristic.heuristic_tie_breaker(self, target, candidates)
         else:
             raise ValueError(f"{tie_break} is an invalid tie breaker.")
 
@@ -983,16 +989,34 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
     Note: we might have this function branch off (by calling other functions)
     depending on some future solvers that we implement.
     """
-    if verbose:
-        sys.stdout.write(f"\r\tSolving using DiracDeltaHeuristicBase... {' '*20}")
-        sys.stdout.flush()
-    solver = DDHeuristicOversizeCorrection(graph, num_buses, bus_size, constraints, "HEURISTIC")
-    solver.solve("PRIO_QUEUE")
+    # Try each heuristic before optimizing.
+    all_heuristics = []
+    for tie_break in DDHeuristicOversizeCorrection.supported_tie_breaks:
+        for process_order in DDHeuristicOversizeCorrection.supported_process_order:
+            if verbose:
+                sys.stdout.write(f"\r\tSolving using DDHeuristicOversizeCorrection... "
+                                 f"({tie_break}) ({process_order})")
+                sys.stdout.flush()
+            solver = DDHeuristicOversizeCorrection(graph, num_buses, bus_size, constraints, tie_break)
+            solver.solve(process_order)
+            all_heuristics.append((solver.set_score()[0], solver.solution))
+
+    for tie_break in DDHeuristicTieBreakers.supported_tie_breaks:
+        for process_order in DDHeuristicTieBreakers.supported_process_order:
+            if verbose:
+                sys.stdout.write(f"\r\tSolving using DDHeuristicTieBreakers... "
+                                 f"({tie_break}) ({process_order})")
+                sys.stdout.flush()
+            solver = DDHeuristicTieBreakers(graph, num_buses, bus_size, constraints, tie_break)
+            solver.solve(process_order)
+            all_heuristics.append((solver.set_score()[0], solver.solution))
+
+    heuristic_sol = max(all_heuristics, key=lambda tup: tup[0])[1]
 
     if verbose:
         sys.stdout.write(f"\r\tOptimizing... {' '*30}")
         sys.stdout.flush()
-    solver = BasicOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
+    solver = BasicOptimizer(graph, num_buses, bus_size, constraints, heuristic_sol, verbose=verbose)
     solver.solve()
     solver = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
     solver.solve()
