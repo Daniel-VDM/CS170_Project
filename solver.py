@@ -669,7 +669,7 @@ class Optimizer(Solver):
             raise AttributeError(f"{self} obj doesn't have necessary instance attributes.")
         if self.num_buses == 1:
             if self.verbose:
-                sys.stdout.write(f"\r\tDid NOT optimize")
+                sys.stdout.write(f"\r\tDid NOT optimize {' ' * 30}")
                 sys.stdout.flush()
                 print("")
             return
