@@ -122,8 +122,8 @@ class Solver:
 
         if verbose:
             print("[{}] New Score for {}:  {}  (diff = {})\n".format(str(datetime.datetime.utcnow())[11:],
-                                                                 file_path, round(score, 5),
-                                                                 round(score - SCORES[file_path], 5)))
+                                                                     file_path, round(score, 5),
+                                                                     round(score - SCORES[file_path], 5)))
         with open(file_path, 'w', encoding='utf8') as f:
             for lst in self.solution:
                 f.write(str(lst))
