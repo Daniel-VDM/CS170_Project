@@ -869,7 +869,8 @@ class BasicOptimizer(Optimizer):
                 score = self.swap(student_1, student_2, bus1, bus2, score)
 
             if self.verbose:
-                sys.stdout.write(f"\r\tScore on iteration {i} of BasicOptimizer: {round(score,5)}")
+                sys.stdout.write(f"\r\tScore on iteration {i} of BasicOptimizer: "
+                                 f"{round(score,5)} {' '*30}")
                 sys.stdout.flush()
             if score == last_iter_score:
                 if self.verbose:
@@ -937,7 +938,8 @@ class TreeSearchOptimizer(Optimizer):
                 score = self.rollout(score)
 
             if self.verbose:
-                sys.stdout.write(f"\r\tScore on iteration {iteration} of TreeSearchOptimizer: {round(score,5)}")
+                sys.stdout.write(f"\r\tScore on iteration {iteration} of TreeSearchOptimizer: "
+                                 f"{round(score,5)} {' '*30}")
                 sys.stdout.flush()
             if score == last_iter_score:
                 if self.verbose:
@@ -1016,12 +1018,23 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
     if verbose:
         sys.stdout.write(f"\r\tOptimizing... {' '*30}")
         sys.stdout.flush()
+    # Chain both optimizers
     solver = BasicOptimizer(graph, num_buses, bus_size, constraints, heuristic_sol, verbose=verbose)
     solver.solve()
     solver = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solver.solution, verbose=verbose)
     solver.solve()
 
-    return solver
+    # Just tree optimizer
+    solver2 = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, heuristic_sol, verbose=verbose)
+    solver2.solve()
+
+    solver.set_score()
+    solver2.set_score()
+
+    # Take the best optimized solution.
+    if solver.score > solver2.score:
+        return solver
+    return solver2
 
 
 def main():
