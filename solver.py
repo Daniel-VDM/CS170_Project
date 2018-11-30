@@ -995,7 +995,7 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
         for process_order in DDHeuristicOversizeCorrection.supported_process_order:
             if verbose:
                 sys.stdout.write(f"\r\tSolving using DDHeuristicOversizeCorrection... "
-                                 f"({tie_break}) ({process_order})")
+                                 f"({tie_break}) ({process_order}) {' '* 10}")
                 sys.stdout.flush()
             solver = DDHeuristicOversizeCorrection(graph, num_buses, bus_size, constraints, tie_break)
             solver.solve(process_order)
@@ -1005,7 +1005,7 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
         for process_order in DDHeuristicTieBreakers.supported_process_order:
             if verbose:
                 sys.stdout.write(f"\r\tSolving using DDHeuristicTieBreakers... "
-                                 f"({tie_break}) ({process_order})")
+                                 f"({tie_break}) ({process_order}) {' '* 10}")
                 sys.stdout.flush()
             solver = DDHeuristicTieBreakers(graph, num_buses, bus_size, constraints, tie_break)
             solver.solve(process_order)
