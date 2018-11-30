@@ -216,6 +216,72 @@ class Solver:
 ####################
 
 
+class HeuristicPriorityQueue:
+    """
+    Special (inefficient) 'priority queue' for the heuristic solver. Queue is used for
+    processing the order in which students are added to buses.
+    """
+
+    def __init__(self, solver, iterable=None, ranked="potential_friends"):
+        self.solver = solver
+        self.rank = ranked.upper()
+        self.lst = []
+        if iterable:
+            for el in iterable:
+                self.lst.append((-1, el))
+            self._rank()
+
+    def __repr__(self):
+        return f"<HeuristicQueue> lst: {self.lst}"
+
+    def __bool__(self):
+        return len(self.lst) > 0
+
+    def clear(self):
+        self.lst = []
+
+    def append(self, x):
+        self.appendleft(x)
+
+    def appendleft(self, x):
+        self.lst.append(x)
+
+    def remove(self, x):
+        self.lst.remove(x)
+
+    def _rank(self):
+        """ Private method to rank elements in the 'queue'
+
+        POTENTIAL_FRIENDS:
+            Ranks them from least to greatest according to the number of
+            friends (edge) each student could possibly add to the score
+            in 1 time step (disregarding rowdy groups for simplicity).
+        """
+        if self.rank == "POTENTIAL_FRIENDS":
+            lst = []
+            for rank, u in self.lst:
+                u_friends = set(self.solver.graph.neighbors(u))
+                friend_count = 0
+                for bus in self.solver.solution:
+                    for v in bus:
+                        if v in u_friends:
+                            friend_count += 1
+                bisect.insort(lst, (friend_count, u))
+            self.lst = lst
+        else:
+            raise ValueError(f"{self.rank} is unsupported rank scheme for {self}")
+
+    def pop(self):
+        return self.popleft()
+
+    def popleft(self):
+        if not self.lst:
+            raise IndexError("List is empty.")
+        el = self.lst.pop(0)[1]
+        self._rank()
+        return el
+
+
 class Heuristic(Solver):
     """
     Main heuristic solver class that contains all of the shared methods.
@@ -229,11 +295,11 @@ class Heuristic(Solver):
 
     def set_process_queue(self, kind="LOW_DEGREE"):
         """
-        Method to set the process queue of heuristic solvers.
+        Method to set the process lst of heuristic solvers.
 
         :param kind: (str) of how we want to order the children.
             'LOW_DEGREE' = lowest to highest degree children / nodes.
-        :return: A queue (deque obj) of the order in which the
+        :return: A lst (deque obj) of the order in which the
             heuristic will be processed. So the order of how the
             children get added to the solution.
         """
@@ -245,6 +311,8 @@ class Heuristic(Solver):
         elif kind == "HIGH_DEGREE":
             for node in sorted(self.graph.degree, key=lambda x: x[1], reverse=True):
                 self.process_queue.append(node[0])
+        elif kind == "PRIO_QUEUE":
+            self.process_queue = HeuristicPriorityQueue(self, self.graph.nodes)
         return self.process_queue
 
     def heuristic(self, bus_num, target):
@@ -325,8 +393,7 @@ class Heuristic(Solver):
 
         # Add vertices to buses using heuristic following the process_queue's order.
         while self.process_queue:
-            # TODO: prio sorting... (method override for the queue)
-            target = self.process_queue.popleft()  # queue popping b/c we might use prio-queue
+            target = self.process_queue.popleft()  # lst popping b/c we might use prio-queue
 
             dest_bus = self.process_heuristic(target, range(self.num_buses))
 
@@ -542,7 +609,7 @@ class DDHeuristicOversizeCorrection(DDHeuristicTieBreakers):
 
         # Add vertices to buses using heuristic following the process_queue's order.
         while self.process_queue:
-            target = self.process_queue.popleft()  # queue popping b/c we might use prio-queue
+            target = self.process_queue.popleft()  # lst popping b/c we might use prio-lst
 
             dest_bus = self.process_heuristic(target, range(self.num_buses))
 
@@ -918,7 +985,7 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
         sys.stdout.write(f"\r\tSolving using DiracDeltaHeuristicBase... {' '*20}")
         sys.stdout.flush()
     solver = DDHeuristicOversizeCorrection(graph, num_buses, bus_size, constraints, "HEURISTIC")
-    solver.solve()
+    solver.solve("PRIO_QUEUE")
 
     if verbose:
         sys.stdout.write(f"\r\tOptimizing... {' '*30}")
