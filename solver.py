@@ -221,6 +221,9 @@ class HeuristicPriorityQueue:
     """
     Special (inefficient) 'priority queue' for the heuristic solver. Queue is used for
     processing the order in which students are added to buses.
+
+    Its a queue to fit the class code/structure, but really this is more like a
+    generator.
     """
 
     def __init__(self, solver, iterable=None, ranked="potential_friends"):
