@@ -1041,7 +1041,7 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
     heuristic_sol = max(all_heuristics, key=lambda tup: tup[0])[1]
 
     if verbose:
-        sys.stdout.write(f"\r\tOptimizing... {' '*30}")
+        sys.stdout.write(f"\r\tOptimizing... {' '*50}")
         sys.stdout.flush()
     solver = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, heuristic_sol,
                                  sample_size=300, max_rollout=max(20, num_buses), verbose=verbose)
