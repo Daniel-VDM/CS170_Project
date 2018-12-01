@@ -1096,5 +1096,5 @@ def main():
 
 
 if __name__ == '__main__':
-    for _ in range(3):
+    for _ in range(1):
         main()
