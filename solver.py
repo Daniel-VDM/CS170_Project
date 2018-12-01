@@ -769,10 +769,11 @@ class Optimizer(Solver):
 
 
 class BasicOptimizer(Optimizer):
-    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, verbose=False):
+    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, verbose=False, early_termination=True):
         Optimizer.__init__(self, graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
         self.verbose = verbose
+        self.early_termination = early_termination
         # To keep track of the score as we make optimizer steps
         # Setup instance variables
         # self.bus_mapping = None
@@ -873,7 +874,7 @@ class BasicOptimizer(Optimizer):
                 sys.stdout.write(f"\r\tScore on iteration {i} of BasicOptimizer: "
                                  f"{round(score,5)} {' '*30}")
                 sys.stdout.flush()
-            if score == last_iter_score:
+            if score == last_iter_score and self.early_termination:
                 if self.verbose:
                     sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i} {' '*30}")
                     sys.stdout.flush()
@@ -886,11 +887,12 @@ class BasicOptimizer(Optimizer):
 class TreeSearchOptimizer(Optimizer):
 
     def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, max_rollout=5,
-                 verbose=False):
+                 verbose=False, early_termination=True):
         Solver.__init__(self, graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
         self.max_rollout = max_rollout
         self.verbose = verbose
+        self.early_termination = early_termination
 
     # Override swap because we don't want to copy or cancel out inferior solutions until rollout is complete
     def swap(self, vertex_1, vertex_2, bus1, bus2):
@@ -942,7 +944,7 @@ class TreeSearchOptimizer(Optimizer):
                 sys.stdout.write(f"\r\tScore on iteration {iteration} of TreeSearchOptimizer: "
                                  f"{round(score,5)} {' '*30}")
                 sys.stdout.flush()
-            if score == last_iter_score:
+            if score == last_iter_score and self.early_termination:
                 if self.verbose:
                     sys.stdout.write(f"\r\tStopped TreeSearchOptimizer on iteration {iteration} {' '*30}")
                     sys.stdout.flush()
