@@ -66,11 +66,14 @@ class Solver:
             So the first el of the returned list contributes the least to the score
             (after accounting for degree) and the last el contributes the most.
         """
-        limit = limit if limit else sum(len(l) for l in self.solution)
+        limit = limit if limit else len(self.graph.nodes)
         lst = []
         for i in range(len(self.solution)):
             bus_set = set(self.solution[i])
             for u in self.solution[i]:
+                if len(self.solution[i]) == 2:
+                    z = 1
+
                 # Terminate early if possible
                 if len(lst) == limit:
                     return [l[1] for l in lst]
@@ -237,7 +240,7 @@ class HeuristicPriorityQueue:
         return f"<HeuristicQueue> set: {self.set}"
 
     def __bool__(self):
-        return len(self.set) > 0
+        return bool(len(self.set) > 0 or self.nxt)
 
     def clear(self):
         self.set.clear()
@@ -279,12 +282,18 @@ class HeuristicPriorityQueue:
 
     def pop(self):
         to_be_returned = self.nxt
-        self._rank()
+        if self.set:
+            self._rank()
+        else:
+            self.nxt = None
         return to_be_returned
 
     def popleft(self):
         to_be_returned = self.nxt
-        self._rank()
+        if self.set:
+            self._rank()
+        else:
+            self.nxt = None
         return to_be_returned
 
 
@@ -418,9 +427,11 @@ class Heuristic(Solver):
         for to_bus_index in empty_bus_list:
             v, from_bus_index = next(swapped_vertices)
             while len(self.solution[from_bus_index]) == 1:
-                v, from_bus_index = next(swapped_vertices)
+                try:  # Hacky but it works :D
+                    v, from_bus_index = next(swapped_vertices)
+                except StopIteration:
+                    swapped_vertices = iter(self.get_solution_vertices_by_importance())
             self.move_student(v, from_bus_index, to_bus_index)
-
         return self.solution
 
 
