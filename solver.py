@@ -9,6 +9,7 @@ import sys
 import json
 import time
 import datetime
+import math
 from shutil import copyfile
 from collections import deque
 
@@ -225,29 +226,27 @@ class HeuristicPriorityQueue:
     def __init__(self, solver, iterable=None, ranked="potential_friends"):
         self.solver = solver
         self.rank = ranked.upper()
-        self.lst = []
-        if iterable:
-            for el in iterable:
-                self.lst.append((-1, el))
-            self._rank()
+        self.set = set(iterable) if iterable else set()
+        self.nxt = None
+        self._rank()
 
     def __repr__(self):
-        return f"<HeuristicQueue> lst: {self.lst}"
+        return f"<HeuristicQueue> set: {self.set}"
 
     def __bool__(self):
-        return len(self.lst) > 0
+        return len(self.set) > 0
 
     def clear(self):
-        self.lst = []
+        self.set.clear()
 
     def append(self, x):
         self.appendleft(x)
 
     def appendleft(self, x):
-        self.lst.append(x)
+        self.set.add(x)
 
     def remove(self, x):
-        self.lst.remove(x)
+        self.set.remove(x)
 
     def _rank(self):
         """ Private method to rank elements in the 'queue'
@@ -258,8 +257,8 @@ class HeuristicPriorityQueue:
             in 1 time step (disregarding rowdy groups for simplicity).
         """
         if self.rank == "POTENTIAL_FRIENDS":
-            lst = []
-            for rank, u in self.lst:
+            min_el = (math.inf, None)
+            for u in self.set:
                 u_friends = set(self.solver.graph.neighbors(u))
                 weight = 0
                 for bus in self.solver.solution:
@@ -268,21 +267,22 @@ class HeuristicPriorityQueue:
                         if v in u_friends:
                             friend_count += 1
                     weight = max(weight, friend_count)
-                bisect.insort(lst, (weight, u))
-            lst.reverse()
-            self.lst = lst
+                if weight < min_el[0]:
+                    min_el = (weight, u)
+            self.set.remove(min_el[1])
+            self.nxt = min_el[1]
         else:
             raise ValueError(f"{self.rank} is unsupported rank scheme for {self}")
 
     def pop(self):
-        return self.popleft()
+        to_be_returned = self.nxt
+        self._rank()
+        return to_be_returned
 
     def popleft(self):
-        if not self.lst:
-            raise IndexError("List is empty.")
-        el = self.lst.pop()[1]
+        to_be_returned = self.nxt
         self._rank()
-        return el
+        return to_be_returned
 
 
 class Heuristic(Solver):
@@ -304,11 +304,11 @@ class Heuristic(Solver):
 
     def set_process_queue(self, kind="LOW_DEGREE"):
         """
-        Method to set the process lst of heuristic solvers.
+        Method to set the process set of heuristic solvers.
 
         :param kind: (str) of how we want to order the children.
             'LOW_DEGREE' = lowest to highest degree children / nodes.
-        :return: A lst (deque obj) of the order in which the
+        :return: A set (deque obj) of the order in which the
             heuristic will be processed. So the order of how the
             children get added to the solution.
         """
@@ -402,7 +402,7 @@ class Heuristic(Solver):
 
         # Add vertices to buses using heuristic following the process_queue's order.
         while self.process_queue:
-            target = self.process_queue.popleft()  # lst popping b/c we might use prio-queue
+            target = self.process_queue.popleft()  # set popping b/c we might use prio-queue
 
             dest_bus = self.process_heuristic(target, range(self.num_buses))
 
@@ -618,7 +618,7 @@ class DDHeuristicOversizeCorrection(DDHeuristicTieBreakers):
 
         # Add vertices to buses using heuristic following the process_queue's order.
         while self.process_queue:
-            target = self.process_queue.popleft()  # lst popping b/c we might use prio-lst
+            target = self.process_queue.popleft()  # set popping b/c we might use prio-set
 
             dest_bus = self.process_heuristic(target, range(self.num_buses))
 
@@ -994,9 +994,9 @@ TIE_BREAK_BREAKS = [
 ]
 
 TIE_BREAK_PROCESS = [
+    "PRIO_QUEUE",
     "HIGH_DEGREE",
     "LOW_DEGREE",
-    "PRIO_QUEUE"
 ]
 
 OVER_CORR_BREAKS = [

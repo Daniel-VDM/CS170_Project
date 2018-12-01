@@ -264,7 +264,7 @@ class InputGenerator:
 
         def swap(lst1, lst2, a, b):
             """
-            Helper to mutate lst args via swapping a and b.
+            Helper to mutate set args via swapping a and b.
             Swap a from lst1 with b from lst2.
             """
             lst1.append(b)
