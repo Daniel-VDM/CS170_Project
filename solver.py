@@ -71,9 +71,6 @@ class Solver:
         for i in range(len(self.solution)):
             bus_set = set(self.solution[i])
             for u in self.solution[i]:
-                if len(self.solution[i]) == 2:
-                    z = 1
-
                 # Terminate early if possible
                 if len(lst) == limit:
                     return [l[1] for l in lst]
