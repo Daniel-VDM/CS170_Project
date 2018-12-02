@@ -130,6 +130,7 @@ class Solver:
                 f.write(str(lst))
                 f.write("\n")
 
+        SCORES[file_path] = score
         # Update jason file's scores.
         if os.path.isfile(score_path):
             copyfile(score_path, f"{score_path}.bak")  # Backup file
