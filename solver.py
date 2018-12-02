@@ -1064,6 +1064,11 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
 
     return solver
 
+def optimize_ours(graph, num_buses, bus_size, constraints, solution, sample_size, max_rollout, verbose=False):
+    # Optimizes our own solutions
+    solver = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solution, sample_size=sample_size, max_rollout=max_rollout, verbose=False)
+    solver.solve()
+    return solver
 
 def main():
     """
