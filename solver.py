@@ -1,17 +1,16 @@
-import networkx as nx
 import os
-import numpy as np
 import copy
-import matplotlib.pyplot as plt
 import bisect
-import datetime
 import sys
 import json
 import time
 import datetime
 import math
+import numpy as np
+import networkx as nx
 from shutil import copyfile
 from collections import deque
+import matplotlib.pyplot as plt
 
 ###########################################
 # Change this variable to the path to 
@@ -28,9 +27,7 @@ path_to_inputs = "./all_inputs"
 path_to_outputs = "./outputs"
 
 ###########################################
-# Dictionary to track scores. Actually a
-# dictionary of the three sized dictionaries
-# which store each input_name to a score.
+# Dictionary to track scores.
 ###########################################
 score_path = f"{path_to_outputs}/scores.json"
 SCORES = {}
@@ -413,14 +410,14 @@ class Heuristic(Solver):
         if not empty_bus_list:
             return self.solution
 
-        swapped_vertices = iter(self.get_solution_vertices_by_importance())
+        swap_candidates = iter(self.get_solution_vertices_by_importance())
         for to_bus_index in empty_bus_list:
-            v, from_bus_index = next(swapped_vertices)
+            v, from_bus_index = next(swap_candidates)
             while len(self.solution[from_bus_index]) == 1:
                 try:  # Hacky but it works :D
-                    v, from_bus_index = next(swapped_vertices)
+                    v, from_bus_index = next(swap_candidates)
                 except StopIteration:
-                    swapped_vertices = iter(self.get_solution_vertices_by_importance())
+                    swap_candidates = iter(self.get_solution_vertices_by_importance())
             self.move_student(v, from_bus_index, to_bus_index)
 
         return self.solution
