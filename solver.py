@@ -400,6 +400,31 @@ class Heuristic(Solver):
         self.solution[to_bus_index].append(v)
         self.solution_set_rep[to_bus_index].add(v)
 
+    def check_and_correct_nonempty_buses(self):
+        """
+        Checks self.solution to make sure that all buses are non-empty.
+
+        Greedily corrects (by vertex importance) self.solution if there are
+        non-empty buses.
+
+        :return: self.solution
+        """
+        empty_bus_list = [i for i in range(len(self.solution)) if not self.solution[i]]
+        if not empty_bus_list:
+            return self.solution
+
+        swapped_vertices = iter(self.get_solution_vertices_by_importance())
+        for to_bus_index in empty_bus_list:
+            v, from_bus_index = next(swapped_vertices)
+            while len(self.solution[from_bus_index]) == 1:
+                try:  # Hacky but it works :D
+                    v, from_bus_index = next(swapped_vertices)
+                except StopIteration:
+                    swapped_vertices = iter(self.get_solution_vertices_by_importance())
+            self.move_student(v, from_bus_index, to_bus_index)
+
+        return self.solution
+
     def solve(self, process_order=None):
         """
         The main/default heuristic solver method.
@@ -412,25 +437,14 @@ class Heuristic(Solver):
 
         # Add vertices to buses using heuristic following the process_queue's order.
         while self.process_queue:
-            target = self.process_queue.popleft()  # set popping b/c we might use prio-queue
+            target = self.process_queue.popleft()
 
             dest_bus = self.process_heuristic(target, range(self.num_buses))
 
             self.solution[dest_bus].append(target)
             self.solution_set_rep[dest_bus].add(target)
 
-        # Takes least significant vertices and fill out empty buses
-        empty_bus_list = [i for i in range(len(self.solution)) if not self.solution[i]]
-        swapped_vertices = iter(self.get_solution_vertices_by_importance())
-        for to_bus_index in empty_bus_list:
-            v, from_bus_index = next(swapped_vertices)
-            while len(self.solution[from_bus_index]) == 1:
-                try:  # Hacky but it works :D
-                    v, from_bus_index = next(swapped_vertices)
-                except StopIteration:
-                    swapped_vertices = iter(self.get_solution_vertices_by_importance())
-            self.move_student(v, from_bus_index, to_bus_index)
-        return self.solution
+        return self.check_and_correct_nonempty_buses()
 
 
 class DiracDeltaHeuristicBase(Heuristic):
@@ -630,7 +644,7 @@ class DDHeuristicOversizeCorrection(DDHeuristicTieBreakers):
 
         # Add vertices to buses using heuristic following the process_queue's order.
         while self.process_queue:
-            target = self.process_queue.popleft()  # set popping b/c we might use prio-set
+            target = self.process_queue.popleft()
 
             dest_bus = self.process_heuristic(target, range(self.num_buses))
 
@@ -655,16 +669,7 @@ class DDHeuristicOversizeCorrection(DDHeuristicTieBreakers):
                 if len(self.solution[dest_bus]) >= self.bus_size:
                     free_buses.remove(dest_bus)
 
-        # Takes least significant vertices and fill out empty buses
-        empty_bus_list = [i for i in range(len(self.solution)) if not self.solution[i]]
-        swapped_vertices = iter(self.get_solution_vertices_by_importance())
-        for to_bus_index in empty_bus_list:
-            v, from_bus_index = next(swapped_vertices)
-            while len(self.solution[from_bus_index]) == 1:
-                v, from_bus_index = next(swapped_vertices)
-            self.move_student(v, from_bus_index, to_bus_index)
-
-        return self.solution
+        return self.check_and_correct_nonempty_buses()
 
 
 #############
@@ -705,26 +710,6 @@ class Optimizer(Solver):
         self.solution[bus] = left_hand_list + right_hand_list
 
     def swap(self, vertex_1, vertex_2, bus1, bus2, score):
-        # Swaps the two vertices and returns a tuple with the new solution and a score
-        # NOTE: The new solution is only swapped if the new score is better
-        # Count the number of friends lost in each bus by the swap
-        # TODO: Finish implementing if calling score is too slow
-        """
-        original_friends_vertex_1 = self.count_friends_in_bus(vertex_1, bus1) if vertex_1 is not None else 0
-        original_friends_vertex_2 = self.count_friends_in_bus(vertex_2, bus2) if vertex_2 is not None else 0
-        new_friends_vertex_1 = self.count_friends_in_bus(vertex_1, bus2) if vertex_1 is not None else 0
-        new_friends_vertex_2 = self.count_friends_in_bus(vertex_2, bus2) if vertex_2 is not None else 0
-
-        new_score = self.curr_score - (original_friends_vertex_1 + original_friends_vertex_2) + (
-                    new_friends_vertex_1 + new_friends_vertex_2)
-
-        # Check differences caused by forming/breaking up rowdy groups
-        original_rowdy_groups_vertex_1 = self.rowdy_groups_with_vertex(vertex_1, bus1) if vertex_1 is not None else 0
-        original_rowdy_groups_vertex_2 = self.rowdy_groups_with_vertex(vertex_2, bus2) if vertex_2 is not None else 0
-        new_rowdy_groups_vertex_1 = self.rowdy_groups_with_vertex(vertex_1, bus2) if vertex_1 is not None else 0
-        new_rowdy_groups_vertex_2 = self.rowdy_groups_with_vertex(vertex_2, bus1) if vertex_2 is not None else 0
-        """
-
         # to hold the place of the old solution before swapping
         holder_solution = copy.deepcopy(self.solution)
 
@@ -786,78 +771,6 @@ class BasicOptimizer(Optimizer):
         self.sample_size = sample_size
         self.verbose = verbose
         self.early_termination = early_termination
-        # To keep track of the score as we make optimizer steps
-        # Setup instance variables
-        # self.bus_mapping = None
-        # self.is_invalid = None
-        # Setup methods for quick access
-        # self.set_bus_map()
-        # self.set_invalid_vertices()
-
-    """
-    def set_bus_map(self):
-        # Sets up a mapping from vertex to bus
-        mapping = {}
-
-        for index, bus in enumerate(self.solution):
-            for member in bus:
-                mapping[member] = index
-
-        self.bus_mapping = mapping
-
-    def set_invalid_vertices(self):
-        # Sets up a dictionary of vertices from vertex to truth value that tells us whether this vertex is invalid
-        # This dictionary will change throughout the optimization process
-        truth_dict = {}
-        # Set this truth dict to an initial value
-
-        for rowdy_group in self.constraints:
-            all_in_bus = True
-            bus_index = self.bus_mapping[rowdy_group[0]]
-
-            for member in rowdy_group:
-                # Check to see if they're all in the bus above
-                if self.bus_mapping[member] != bus_index:
-                    all_in_bus = False
-                    break
-
-            # After checking a rowdy group if our flag is not false we invalidate these edges
-            if all_in_bus:
-                for member in rowdy_group:
-                    truth_dict[member] = True
-
-        # Set the truth array to be an instance variable
-        self.is_invalid = truth_dict
-        
-        self.curr_score = self.set_score()
-
-    def count_friends_in_bus(self, vertex, bus):
-        # loop through bus list and see if each element is a friend
-        count = 0
-
-        for student in self.solution[bus]:
-            if len(self.graph.edges[vertex, student]) != 0:
-                count += 1
-
-        return count
-
-    def rowdy_groups_with_vertex(self, vertex, bus):
-        # Returns the COMPLETE rowdy groups in the input bus that the input vertex is part of
-        # Loop through the constraint groups
-        # This list will keep track of which rowdy groups are complete
-        truth_list = [True] * len(self.constraints)
-
-        for index, rowdy_group in enumerate(self.constraints):
-            # First check if the vertex in question is even a part of this rowdy group
-            if vertex in rowdy_group:
-                # Check to see if the rest of the rowdy group is in the bus
-                for member in rowdy_group:
-                    if member not in self.solution[bus] and member is not vertex:
-                        # This rowdy group is not complete in the bus, so we flip the truth value
-                        truth_list[index] = False
-
-        return [self.constraints[i] for i in range(len(self.constraints)) if truth_list[i]]
-        """
 
     # Call this method to optimize the solution we are given for a specific score
     def optimize(self, max_iterations=1000):
