@@ -411,14 +411,14 @@ class Heuristic(Solver):
         if not empty_bus_list:
             return self.solution
 
-        swapped_vertices = iter(self.get_solution_vertices_by_importance(len(empty_bus_list)))
+        swap_candidates = iter(self.get_solution_vertices_by_importance(len(empty_bus_list)))
         for to_bus_index in empty_bus_list:
-            v, from_bus_index = next(swapped_vertices)
+            v, from_bus_index = next(swap_candidates)
             while len(self.solution[from_bus_index]) == 1:
                 try:  # Hacky but it works :D
-                    v, from_bus_index = next(swapped_vertices)
+                    v, from_bus_index = next(swap_candidates)
                 except StopIteration:
-                    swapped_vertices = iter(self.get_solution_vertices_by_importance())
+                    swap_candidates = iter(self.get_solution_vertices_by_importance())
             self.move_student(v, from_bus_index, to_bus_index)
 
         return self.solution
