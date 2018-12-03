@@ -411,7 +411,7 @@ class Heuristic(Solver):
         if not empty_bus_list:
             return self.solution
 
-        swapped_vertices = iter(self.get_solution_vertices_by_importance())
+        swapped_vertices = iter(self.get_solution_vertices_by_importance(len(empty_bus_list)))
         for to_bus_index in empty_bus_list:
             v, from_bus_index = next(swapped_vertices)
             while len(self.solution[from_bus_index]) == 1:
