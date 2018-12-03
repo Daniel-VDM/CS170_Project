@@ -28,9 +28,7 @@ path_to_inputs = "./all_inputs"
 path_to_outputs = "./outputs"
 
 ###########################################
-# Dictionary to track scores. Actually a
-# dictionary of the three sized dictionaries
-# which store each input_name to a score.
+# Dictionary to track scores.
 ###########################################
 score_path = f"{path_to_outputs}/scores.json"
 SCORES = {}
