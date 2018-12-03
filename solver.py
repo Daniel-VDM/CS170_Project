@@ -1,17 +1,16 @@
-import networkx as nx
 import os
-import numpy as np
 import copy
-import matplotlib.pyplot as plt
 import bisect
-import datetime
 import sys
 import json
 import time
 import datetime
 import math
+import numpy as np
+import networkx as nx
 from shutil import copyfile
 from collections import deque
+import matplotlib.pyplot as plt
 
 ###########################################
 # Change this variable to the path to 
