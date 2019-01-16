@@ -763,20 +763,21 @@ class Optimizer(Solver):
 
 
 class BasicOptimizer(Optimizer):
-    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, verbose=False, early_termination=True):
+    def __init__(self, graph, num_buses, bus_size, constraints, solution, sample_size=100, verbose=False,
+                 early_termination=True):
         Optimizer.__init__(self, graph, num_buses, bus_size, constraints, solution)
         self.sample_size = sample_size
         self.verbose = verbose
         self.early_termination = early_termination
 
     # Call this method to optimize the solution we are given for a specific score
-    def optimize(self, max_iterations=1000):
-        # Initialize the score
+    def optimize(self, max_iterations=1000):  # Initialize the score
         score = self.set_score()[0]
         last_iter_score = score
         # If we don't have two buses no swapping will occur
+        i = 0
         if self.num_buses < 2:
-            sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i} {' '*20}")
+            sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i} {' ' * 20}")
             sys.stdout.flush()
             print("")
             return
@@ -794,11 +795,11 @@ class BasicOptimizer(Optimizer):
 
             if self.verbose:
                 sys.stdout.write(f"\r\tScore on iteration {i} of BasicOptimizer: "
-                                 f"{round(score,5)} {' '*30}")
+                                 f"{round(score, 5)} {' ' * 30}")
                 sys.stdout.flush()
             if score == last_iter_score and self.early_termination:
                 if self.verbose:
-                    sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i} {' '*30}")
+                    sys.stdout.write(f"\r\tStopped BasicOptimizer on iteration {i} {' ' * 30}")
                     sys.stdout.flush()
                 break
         if self.verbose:
@@ -864,11 +865,11 @@ class TreeSearchOptimizer(Optimizer):
 
             if self.verbose:
                 sys.stdout.write(f"\r\tScore on iteration {iteration} of TreeSearchOptimizer: "
-                                 f"{round(score,5)} {' '*30}")
+                                 f"{round(score, 5)} {' ' * 30}")
                 sys.stdout.flush()
             if score == last_iter_score and self.early_termination:
                 if self.verbose:
-                    sys.stdout.write(f"\r\tStopped TreeSearchOptimizer on iteration {iteration} {' '*30}")
+                    sys.stdout.write(f"\r\tStopped TreeSearchOptimizer on iteration {iteration} {' ' * 30}")
                     sys.stdout.flush()
                 break
         if self.verbose:
@@ -944,7 +945,7 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
         for process_order in TIE_BREAK_PROCESS:
             if verbose:
                 sys.stdout.write(f"\r\tSolving using DDHeuristicTieBreakers... "
-                                 f"({tie_break}) ({process_order}) {' '* 10}")
+                                 f"({tie_break}) ({process_order}) {' ' * 10}")
                 sys.stdout.flush()
             solver = DDHeuristicTieBreakers(graph, num_buses, bus_size, constraints, tie_break)
             solver.solve(process_order)
@@ -954,7 +955,7 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
         for process_order in OVER_CORR_PROCESS:
             if verbose:
                 sys.stdout.write(f"\r\tSolving using DDHeuristicOversizeCorrection... "
-                                 f"({tie_break}) ({process_order}) {' '* 10}")
+                                 f"({tie_break}) ({process_order}) {' ' * 10}")
                 sys.stdout.flush()
             solver = DDHeuristicOversizeCorrection(graph, num_buses, bus_size, constraints, tie_break)
             solver.solve(process_order)
@@ -963,7 +964,7 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
     heuristic_sol = max(all_heuristics, key=lambda tup: tup[0])[1]
 
     if verbose:
-        sys.stdout.write(f"\r\tOptimizing... {' '*100}")
+        sys.stdout.write(f"\r\tOptimizing... {' ' * 100}")
         sys.stdout.flush()
     solver = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, heuristic_sol,
                                  sample_size=300, max_rollout=max(20, num_buses), verbose=verbose)
@@ -974,11 +975,14 @@ def solve(graph, num_buses, bus_size, constraints, verbose=False):
 
     return solver
 
+
 def optimize_ours(graph, num_buses, bus_size, constraints, solution, sample_size, max_rollout, verbose=False):
     # Optimizes our own solutions
-    solver = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solution, sample_size=sample_size, max_rollout=max_rollout, verbose=False, early_termination=False)
+    solver = TreeSearchOptimizer(graph, num_buses, bus_size, constraints, solution, sample_size=sample_size,
+                                 max_rollout=max_rollout, verbose=False, early_termination=False)
     solver.solve()
     return solver
+
 
 def main():
     """
@@ -1019,7 +1023,7 @@ def main():
     time_elapsed = datetime.timedelta(seconds=(time.time() - t_start))
     print(f"Time Elapsed: {time_elapsed} hrs")
     all_scores = list(SCORES.values())
-    print(f"Average Score (on leaderboard): {sum(all_scores)/len(all_scores)}")
+    print(f"Average Score (on leaderboard): {sum(all_scores) / len(all_scores)}")
 
 
 if __name__ == '__main__':
