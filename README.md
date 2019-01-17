@@ -7,6 +7,5 @@ For the remaining 3 weeks, each group wrote a program that would approximate any
 
 ## Problem Statement
 <p align="center">
-  <img src="readme_assets/Problem_Statement.png" width="900">
-  <br><i>Sequence to sequence model diagram.</i>
+  <img src="readme_assets/Problem_Statement.png" width="650">
 </p>
