@@ -43,9 +43,7 @@ Sample output file:
 Groups were ranked against one another. Rank was determined by the average of the individual output scores across each group's input. The output score of an input is `f/t` where `f` is the number of friendships in the output and `t` is the total number of friendships possible (so `t` = `|E|` of the input graph). 
 
 **Our rank:**
-This script ranked 28/300. 
-
-Proof can be found [here](readme_assets/rank.png) and [here](readme_assets/rank_total.png).
+This script ranked 28/300. Proof can be found [here](readme_assets/rank.png) and [here](readme_assets/rank_total.png).
 
 ## Misc
 * The write-up that overviews our implementation can be found [here](research/design_doc.pdf).
