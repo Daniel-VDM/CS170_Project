@@ -46,6 +46,6 @@ Groups were ranked against one another. Rank was determined by the average of th
 This script ranked 28/300. Proof can be found [here](readme_assets/rank.png) and [here](readme_assets/rank_total.png).
 
 ## Misc
-* The write-up that overviews our implementation can be found [here](research/design_doc.pdf).
+* The write-up that overviews our implementation can be found [here](final_writeup.pdf).
 * The readme for the solver script can be found [here](solver_README.pdf)
 * The input generation files can be found [here](input_generator)
