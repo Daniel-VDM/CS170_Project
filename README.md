@@ -40,7 +40,7 @@ Sample output file:
 ```
 
 ## Leaderboards
-Groups were ranked against one another. Rank was determined by the average of the individual output scores across each group's input. The output score of an input is `f/t` where `f` is the number of friendships in the output and `t` is the total number of friendships possible (so `t` = `|E|` of the input graph). 
+Groups were ranked against one another. The output score of a single input is `f/t` where `f` is the number of friendships in the output and `t` is the total number of friendships possible (so `t` = `|E|` of the input graph). And a group's score was determined by the average across all of their outputs.
 
 **Our rank:**
 This script ranked 28/300. Proof can be found [here](readme_assets/rank.png) and [here](readme_assets/rank_total.png).
