@@ -47,5 +47,5 @@ This script ranked 28/300. Proof can be found [here](readme_assets/rank.png) and
 
 ## Misc
 * The write-up that overviews our implementation can be found [here](final_writeup.pdf).
-* The readme for the solver script can be found [here](solver_README.txt)
+* The readme for the solver script can be found [here](solver_README.md)
 * The input generation files can be found [here](input_generator)
