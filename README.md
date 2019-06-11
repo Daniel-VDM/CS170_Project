@@ -1,5 +1,5 @@
-# Efficient Algorithms and Intractable Problems Course Project.
-This was the main programming project done for the Efficient Algorithms and Intractable Problems course at UC Berkeley. The goal was to approximate a solution to an NP-Hard problem (detailed in the section below). We had a little over 5 weeks to do this project and we could be in groups of 3. 
+# Approximate Solver for a NP-Hard Problem.
+This was the main programming project done for the Efficient Algorithms and Intractable Problems course taken at UC Berkeley. The goal was to approximate a solution to an NP-Hard problem (detailed in the section below). We had a little over 5 weeks to do this project and we could be in groups of 3. 
 
 During the first 2 weeks, each group had to come up with 3 instances (small, medium and large) of the problem. Then at the end of week 2, all of the group's problem instances were consolidated and distributed.
  
